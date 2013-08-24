@@ -46,7 +46,7 @@ function ShaderSourceFromScript(scriptID) {
 
 function requestURLText(url) {
     var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET", url, false);
+    xmlHttp.open("GET", "Shaders/" + url, false);
     xmlHttp.send();
     return xmlHttp.responseText;
 }
