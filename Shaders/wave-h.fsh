@@ -1,3 +1,10 @@
+/*
+@ author: wysaid
+@ blog: blog.wysaid.org
+@ mail: admin@wysaid.org
+@ data: 2013-8-24
+*/
+
 precision mediump float;
 varying vec2 textureCoordinate;
 uniform sampler2D inputImageTexture;

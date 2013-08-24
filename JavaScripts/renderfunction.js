@@ -41,6 +41,12 @@ function renderGLWithScriptName(scriptName) {
         case "avg-detail-gama":
             renderAvgBlur(-10.0);
             break;
+
+
+        case "avg-emboss":
+            renderWithSteps(scriptName);
+            break;
+
         default: //"default-fsh"
             renderDefault(scriptName);
     }

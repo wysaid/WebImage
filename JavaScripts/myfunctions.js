@@ -71,3 +71,19 @@ function renderAvgBlur(strength) {
     webgl.clear(webgl.COLOR_BUFFER_BIT);
     webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
 }
+
+function renderWithSteps(scriptID) {
+    webglInit();
+    shaderInitWithFragmentShaderID(scriptID);
+    initShaderProgram();
+    initInputImageTexture("inputImage");
+
+    var uniformWidthStep = webgl.getUniformLocation(programObject, "widthStep");
+    var uniformHeightStep = webgl.getUniformLocation(programObject, "heightStep");
+    webgl.uniform1f(uniformWidthStep, widthStep);
+    webgl.uniform1f(uniformHeightStep, heightStep);
+
+    webgl.clearColor(0.0, 0.0, 0.0, 1.0);
+    webgl.clear(webgl.COLOR_BUFFER_BIT);
+    webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
+}

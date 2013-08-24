@@ -24,4 +24,5 @@ var effectsEnum =
     "two-value-black-white",
     "negative-image",
     "negative-black-white",
+    "avg-emboss"
 ];
