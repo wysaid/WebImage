@@ -10,9 +10,9 @@ var g_timeInterval;  //Special usage, for some dynamic effects.
                    //Before interval is called, remember to cancel the last one.(clearInterval)
 var g_motion = 0.0;
 
-function renderDefault() {
+function renderDefault(shaderID) {
     webglInit();
-    shaderInitWithFragmentShaderID("default-fsh");
+    shaderInitWithFragmentShaderID(shaderID);
     initShaderProgram();
     initInputImageTexture("inputImage");
 

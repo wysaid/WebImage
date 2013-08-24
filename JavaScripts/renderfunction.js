@@ -42,6 +42,6 @@ function renderGLWithScriptName(scriptName) {
             renderAvgBlur(-10.0);
             break;
         default: //"default-fsh"
-            renderDefault();
+            renderDefault(scriptName);
     }
 }

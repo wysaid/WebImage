@@ -19,4 +19,9 @@ var effectsEnum =
     "avg-detail-alpha",
     "avg-detail-beta",
     "avg-detail-gama",
+    "avg-black-white",
+    "weighted-black-white",
+    "two-value-black-white",
+    "negative-image",
+    "negative-black-white",
 ];
