@@ -47,6 +47,9 @@ function renderGLWithScriptName(scriptName) {
             renderWithSteps(scriptName);
             break;
 
+        case "two-value-black-white":
+			renderWithDynamicStrength(scriptName);
+			break;
         default: //"default-fsh"
             renderDefault(scriptName);
     }

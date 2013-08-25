@@ -9,6 +9,10 @@
 var g_timeInterval;  //Special usage, for some dynamic effects.
                    //Before interval is called, remember to cancel the last one.(clearInterval)
 var g_motion = 0.0;
+var g_inc = 0.001;
+
+var g_uniformMotion;
+var g_uniformAngle;
 
 function renderDefault(shaderID) {
     webglInit();
@@ -22,10 +26,9 @@ function renderDefault(shaderID) {
 }
 
 function redrawWave() {
-    var uniformMotion = webgl.getUniformLocation(programObject, "motion");
-    var uniformAngle = webgl.getUniformLocation(programObject, "angle");
-    webgl.uniform1f(uniformMotion, g_motion += 0.1);
-    webgl.uniform1f(uniformAngle, 15.0);
+    webgl.uniform1f(g_uniformMotion, g_motion += 0.1);
+    webgl.uniform1f(g_uniformAngle, 15.0);
+
     webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
     if (g_motion > 1.0e20) g_motion = 0.0;
 }
@@ -38,9 +41,11 @@ function renderWave(scriptName) {
     g_motion = 0.0;
     g_timeInterval = setInterval("redrawWave()", 16);
 
+    g_uniformMotion = webgl.getUniformLocation(programObject, "motion");
+    g_uniformAngle = webgl.getUniformLocation(programObject, "angle");
+
     webgl.clearColor(0.0, 0.0, 0.0, 1.0);
     webgl.clear(webgl.COLOR_BUFFER_BIT);
-    webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
 }
 
 function renderAvgBlur(strength) {
@@ -74,4 +79,21 @@ function renderWithSteps(scriptID) {
     webgl.clearColor(0.0, 0.0, 0.0, 1.0);
     webgl.clear(webgl.COLOR_BUFFER_BIT);
     webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
+}
+
+function redrawDynamicStrength() {
+    webgl.uniform1f(g_uniformMotion, g_motion += g_inc);
+    webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
+	if (g_motion > 1.0 || g_motion < 0.0) g_inc = -g_inc;
+}
+
+function renderWithDynamicStrength(scriptID) {
+    webglInit();
+    shaderInitWithFragmentShaderID(scriptID);
+    initShaderProgram();
+    initInputImageTexture("inputImage");
+    g_motion = 0.0;
+	g_timeInterval = setInterval("redrawDynamicStrength()", 16);
+    g_uniformMotion = webgl.getUniformLocation(programObject, "strength");
+
 }
