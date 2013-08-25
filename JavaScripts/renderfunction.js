@@ -41,9 +41,9 @@ function renderGLWithScriptName(scriptName) {
         case "avg-detail-gama":
             renderAvgBlur(-10.0);
             break;
-
-
+            
         case "avg-emboss":
+        case "avg-only-edge":
             renderWithSteps(scriptName);
             break;
 

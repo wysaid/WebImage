@@ -13,12 +13,10 @@ uniform float heightStep;
 
 const float stride = 2.0;
 
-
 void main()
 {
     
     vec3 tmpColor = texture2D(inputImageTexture, textureCoordinate + vec2(widthStep * stride, heightStep * stride)).rgb;
-    tmpColor = texture2D(inputImageTexture, textureCoordinate).rgb - tmpColor + 0.5;
-    float f = (tmpColor.r + tmpColor.g + tmpColor.b) / 3.0;
-    gl_FragColor = vec4(f, f, f, 1.0);
+    tmpColor = abs(texture2D(inputImageTexture, textureCoordinate).rgb - tmpColor);
+    gl_FragColor = vec4(tmpColor, 1.0);
 }
