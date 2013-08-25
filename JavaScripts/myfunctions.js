@@ -30,26 +30,14 @@ function redrawWave() {
     if (g_motion > 1.0e20) g_motion = 0.0;
 }
 
-function renderWaveH() {
+function renderWave(scriptName) {
     webglInit();
-    shaderInitWithFragmentShaderID("wave-h");
+    shaderInitWithFragmentShaderID(scriptName);
     initShaderProgram();
     initInputImageTexture("inputImage");
     g_motion = 0.0;
     g_timeInterval = setInterval("redrawWave()", 16);
 
-    webgl.clearColor(0.0, 0.0, 0.0, 1.0);
-    webgl.clear(webgl.COLOR_BUFFER_BIT);
-    webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);
-}
-
-function renderWaveV() {
-    webglInit();
-    shaderInitWithFragmentShaderID("wave-v");
-    initShaderProgram();
-    initInputImageTexture("inputImage");
-    g_motion = 0.0;
-    g_timeInterval = setInterval("redrawWave()", 16);
     webgl.clearColor(0.0, 0.0, 0.0, 1.0);
     webgl.clear(webgl.COLOR_BUFFER_BIT);
     webgl.drawArrays(webgl.TRIANGLE_STRIP, 0, 4);

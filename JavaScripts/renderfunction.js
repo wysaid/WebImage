@@ -12,10 +12,9 @@ function renderGLWithScriptName(scriptName) {
     {
         //the cases should contain the whole 'effectsEnum'
         case "wave-h":
-            renderWaveH();
-            break;
         case "wave-v":
-            renderWaveV();
+        case "wave-h-v":
+            renderWave(scriptName);
             break;
         case "avg-blur-0.5":
             renderAvgBlur(0.5);

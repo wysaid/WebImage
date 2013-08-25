@@ -11,6 +11,7 @@ var effectsEnum =
     "default-fsh",
     "wave-h",
     "wave-v",
+    "wave-h-v",
     "avg-black-white",
     "weighted-black-white",
     "two-value-black-white",    
