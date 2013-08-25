@@ -26,6 +26,8 @@ Details
    
 4. Run
 
+   You can easily see WebImage by visit: http://webimage.wysaid.org/
+   
    WebImage could run on any browser that supports WebGL, such as chrome, firefox and the new opera.
    
    HOW TO RUN WebImage on your computer: start your local webserver (apache, iis, nginx...), put the whole project under the web root directory.
