@@ -18,5 +18,5 @@ void main()
     
     vec3 tmpColor = texture2D(inputImageTexture, textureCoordinate + vec2(widthStep * stride, heightStep * stride)).rgb;
     tmpColor = abs(texture2D(inputImageTexture, textureCoordinate).rgb - tmpColor);
-    gl_FragColor = vec4(tmpColor, 1.0);
+    gl_FragColor = vec4(tmpColor * 2.0, 1.0);
 }

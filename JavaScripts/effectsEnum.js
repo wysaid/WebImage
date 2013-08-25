@@ -27,4 +27,5 @@ var effectsEnum =
     "avg-edge-beta",
     "avg-edge-gama",
     "avg-only-edge",
+	"gaussion-blur",
 ];

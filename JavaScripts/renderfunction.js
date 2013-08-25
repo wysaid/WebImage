@@ -43,6 +43,7 @@ function renderGLWithScriptName(scriptName) {
             
         case "avg-emboss":
         case "avg-only-edge":
+		case "gaussion-blur":
             renderWithSteps(scriptName);
             break;
 
