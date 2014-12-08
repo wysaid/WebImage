@@ -1,0 +1,87 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerTableTex1;
+uniform sampler2D SamplerBackTex1;
+
+uniform float strength;
+
+vec3 tableLookUp(vec3 src, sampler2D table)
+{
+ src.r = texture2D(table, vec2(src.r, 0.0)).r;
+ src.g = texture2D(table, vec2(src.g, 0.0)).g;
+ src.b = texture2D(table, vec2(src.b, 0.0)).b;
+ return src;
+}
+
+vec3 contrastSP(vec3 src, float value)
+{
+ if(value < 0.0)
+ {
+     value += 200.0;
+     value = (value - 34.0) * 34.0 / 200.0;
+ }
+ src *= 1024.0;
+ src.r = clamp(src.r + ((src.r * (1024.0 - src.r) * (src.r - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ src.g = clamp(src.g + ((src.g * (1024.0 - src.g) * (src.g - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ src.b = clamp(src.b + ((src.b * (1024.0 - src.b) * (src.b - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ return src / 1024.0;
+}
+
+vec3 brightness(vec3 src, float value)
+{
+const float SQRT2 = 1.41421;
+float fac = (SQRT2 * 100.0) / value;
+
+if(value > 0.0)
+{
+    float tmp = 1.0 - src.r - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+    src.r = clamp(tmp, 0.0, 1.0);
+    
+    tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+    src.g = clamp(tmp, 0.0, 1.0);
+    
+    tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+    src.b = clamp(tmp, 0.0, 1.0);
+}
+else
+{
+    float tmp = 1.0 - src.r - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+    src.r = clamp(tmp, 0.0, 1.0);
+    
+    tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+    src.g = clamp(tmp, 0.0, 1.0);
+    
+    tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+    src.b = clamp(tmp, 0.0, 1.0);
+}
+return src;
+}
+
+vec3 softLight(vec3 src1, vec3 src2, float alpha)
+{
+ if(src2.r < 0.5)
+     src2.r = (src2.r * 2.0 - 1.0) * (src1.r - (src1.r * src1.r)) + src1.r;
+ else src2.r = ((src2.r * 2.0 - 1.0) * (sqrt(src1.r) - src1.r)) + src1.r;
+ 
+ if(src2.g < 0.5)
+     src2.g = (src2.g * 2.0 - 1.0) * (src1.g - (src1.g * src1.g)) + src1.g;
+ else src2.g = ((src2.g * 2.0 - 1.0) * (sqrt(src1.g) - src1.g)) + src1.g;
+ 
+ if(src2.b < 0.5)
+     src2.b = (src2.b * 2.0 - 1.0) * (src1.b - (src1.b * src1.b)) + src1.b;
+ else src2.b = ((src2.b * 2.0 - 1.0) * (sqrt(src1.b) - src1.b)) + src1.b;
+ 
+ return mix(src1, src2, alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+//    src = brightness(src, 30.0);
+//    src = contrastSP(src, -100.0);
+    src = tableLookUp(src, SamplerTableTex1);
+    src = softLight(src, tex.rgb, tex.a * 0.3);
+    gl_FragColor = vec4(src, 1.0);
+}

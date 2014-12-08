@@ -1,0 +1,52 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+const vec2 vignetteCenter = vec2(0.5, 0.5);   // the center for the vignette in tex coords (defaults to 0.5, 0.5)
+//uniform vec3 vignetteColor = vec3(1.0, 1.0, 1.0); // The color to use for the Vignette (defaults to black)
+uniform highp float vignetteStart;  // The normalized distance from the center where the vignette effect starts. Default of 0.
+uniform highp float vignetteRange;  // The normalized range from the vignette effect start and ends. Default of 0.5.
+uniform highp float aspectRatio;
+
+void main(void)
+{
+    float H[9];
+    H[0] = 0.393;
+    H[1] = 0.769;
+    H[2] = 0.189;
+    H[3] = 0.349;
+    H[4] = 0.686;
+    H[5] = 0.168;
+    H[6] = 0.272;
+    H[7] = 0.534;
+    H[8] = 0.131;
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    mediump float lum;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+
+    highp float d = distance(textureCoordinate, vec2(vignetteCenter.x, vignetteCenter.y));
+
+    highp float percent = clamp((d-vignetteStart)/vignetteRange, 0.0, 1.0);
+    alpha = 1.0-percent;// * percent;
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    tmp_s = lum*(1.0-saturate) + saturate*dst;
+    tmp_s = (tmp_s - bound_l)/saturate;
+    dst = tmp_s * alpha;
+    //前人愚蠢的代码，为什么不用矩阵相乘？
+	float nred   =  H[0] * dst.r + H[1] * dst.g + H[2] * dst.b;
+	float ngreen =  H[3] * dst.r + H[4] * dst.g + H[5] * dst.b;
+	dst.b =         H[6] * dst.r + H[7] * dst.g + H[8] * dst.b;
+	dst.r = nred;
+	dst.g = ngreen;
+    
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

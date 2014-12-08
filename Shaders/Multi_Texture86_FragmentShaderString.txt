@@ -1,0 +1,59 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerBackTex2;
+uniform sampler2D SamplerBackTex3;
+uniform sampler2D SamplerBackTex4;
+uniform sampler2D SamplerBackTex5;
+
+vec3 overLay(vec3 src1, vec3 src2, float alpha)
+{
+    if(src1.r < 0.5)
+        src2.r = (src1.r * src2.r) * 2.0;
+    else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+    
+    if(src1.g < 0.5)
+        src2.g = (src1.g * src2.g) * 2.0;
+    else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+    
+    if(src1.b < 0.5)
+        src2.b = (src1.b * src2.b) * 2.0;
+    else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+    
+    return mix(src1, src2, alpha);
+}
+
+vec3 exclude(vec3 src1, vec3 src2, float alpha)
+{
+    return mix(src1, src1 + src2 - src1 * src2 * 2.0, alpha);
+}
+
+vec3 screen(vec3 src1, vec3 src2, float alpha)
+{
+    return mix(src1, src1 + src2 - src1 * src2, alpha);
+}
+
+vec3 colorBurn(vec3 src1, vec3 src2, float alpha)
+{
+    /// plus 0.00003 to avoid dividing by float zero
+    return mix(src1, 1.0 - min((1.0 - src1) / (src2 + 0.00003), 1.0), alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex1 = texture2D(SamplerBackTex1, textureCoordinate);
+    vec4 tex2 = texture2D(SamplerBackTex2, textureCoordinate);
+    vec4 tex3 = texture2D(SamplerBackTex3, textureCoordinate);
+    vec4 tex4 = texture2D(SamplerBackTex4, textureCoordinate);
+    vec4 tex5 = texture2D(SamplerBackTex5, textureCoordinate);
+    
+    src = mix(src, tex5.rgb, tex5.a);
+    src = overLay(src, tex4.rgb, tex4.a);
+    src = exclude(src, tex3.rgb, tex3.a);
+    src = screen(src, tex2.rgb, tex2.a);
+    src = colorBurn(src, tex1.rgb, tex1.a);
+    
+    gl_FragColor = vec4(src, 1.0);
+}

@@ -1,0 +1,71 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;   //Special use, note that the coordinates range from 0 ~ 1
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerBackTex2;
+
+uniform float aspectRatio;
+uniform float widthStep;
+uniform float heightStep;
+
+const float boundEdge = 0.0625;
+const float boundRange = 0.395;
+
+const float boundXLow = 1.0 - boundEdge - boundRange;
+const float boundYLow = boundEdge;
+const float boundXHigh = 1.0 - boundEdge;
+const float boundYHigh = boundEdge + boundRange;
+
+vec3 linearLight(vec3 src1, vec3 src2, float alpha)
+{
+    return mix(src1, clamp(src1 + src2 * 2.0 - 1.0, 0.0, 1.0), alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex1;
+    vec3 tex2 = texture2D(SamplerBackTex2, textureCoordinate).rgb;
+    vec2 coordTransform;
+    
+    src = linearLight(src, tex2, 0.74);
+    
+    if(aspectRatio < 1.0)
+    {
+        if(textureCoordinate.x > boundXLow && textureCoordinate.x < boundXHigh);
+        {
+            float ySteps = boundRange / widthStep;
+            float yStepRange = ySteps * heightStep;
+            float yBoundLow = boundYLow * aspectRatio;
+            float yBoundHigh = yBoundLow + yStepRange;
+            
+            if(textureCoordinate.y > yBoundLow && textureCoordinate.y < yBoundHigh)
+            {
+                coordTransform = textureCoordinate - vec2(boundXLow, yBoundLow);
+                coordTransform *= vec2(1.0 / boundRange, 1.0 / yStepRange);
+                tex1 = texture2D(SamplerBackTex1, coordTransform);
+                src = mix(src, tex1.rgb, tex1.a);
+            }
+        }
+    }
+    else
+    {
+        if(textureCoordinate.y > boundYLow && textureCoordinate.y < boundYHigh)
+        {
+            float xSteps = boundRange / heightStep;
+            float xStepRange = xSteps * widthStep;
+            float xBoundLow = 1.0 - (boundEdge + boundRange) / aspectRatio;
+            float xBoundHigh = 1.0 - boundEdge / aspectRatio;
+            
+            if(textureCoordinate.x > xBoundLow && textureCoordinate.x < xBoundHigh)
+            {
+                coordTransform = textureCoordinate - vec2(xBoundLow, boundYLow);
+                coordTransform *= vec2(1.0 / xStepRange, 1.0 / boundRange);
+                tex1 = texture2D(SamplerBackTex1, coordTransform);
+                src = mix(src, tex1.rgb, tex1.a);
+            }
+        }
+    }
+    
+    gl_FragColor =  vec4(src, 1.0);
+}

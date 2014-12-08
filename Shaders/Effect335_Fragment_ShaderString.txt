@@ -1,0 +1,132 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerBackTex2;
+uniform sampler2D SamplerBackTex3;
+uniform sampler2D SamplerBackTex4;
+
+ vec3 RGB2HSL(vec3 src)
+ {
+     float maxc = max(max(src.r, src.g), src.b);
+     float minc = min(min(src.r, src.g), src.b);
+     float L = (maxc + minc) / 2.0;
+     if(maxc == minc)
+     return vec3(0.0, 0.0, L);
+     float H, S;
+     
+     if(L < 0.5)
+     S = (maxc - minc) / (maxc + minc);
+     else
+     S = (maxc - minc) / (2.0 - maxc - minc);
+     
+     if(maxc == src.r)
+     H = (src.g - src.b) / (maxc - minc);
+     else if(maxc == src.g)
+     H = 2.0 + (src.b - src.r) / (maxc - minc);
+     else
+     H = 4.0 + (src.r - src.g) / (maxc - minc);
+     H *= 60.0;
+     if(H < 0.0) H += 360.0;
+     return vec3(H / 360.0, S, L); // H(0~360), S(0~1), L(0~1)
+ }
+ 
+ vec3 HSL2RGB(vec3 src) // H, S, L
+ {
+     if(src.y <= 0.0)
+     return vec3(src.z, src.z, src.z);
+     float q = (src.z < 0.5) ? src.z * (1.0 + src.y) : (src.z + src.y - (src.y * src.z));
+     float p = 2.0 * src.z - q;
+     
+     vec3 dst = vec3(src.x + 0.333, src.x, src.x - 0.333);
+     
+     if(dst.r < 0.0) dst.r += 1.0;
+     else if(dst.r > 1.0) dst.r -= 1.0;
+     
+     if(dst.g < 0.0) dst.g += 1.0;
+     else if(dst.g > 1.0) dst.g -= 1.0;
+     
+     if(dst.b < 0.0) dst.b += 1.0;
+     else if(dst.b > 1.0) dst.b -= 1.0;
+     
+     if(dst.r < 1.0 / 6.0)
+     dst.r = p + (q - p) * 6.0 * dst.r;
+     else if(dst.r < 0.5)
+     dst.r = q;
+     else if(dst.r < 2.0 / 3.0)
+     dst.r = p + (q - p) * ((2.0 / 3.0) - dst.r) * 6.0;
+     else dst.r = p;
+     
+     if(dst.g < 1.0 / 6.0)
+     dst.g = p + (q - p) * 6.0 * dst.g;
+     else if(dst.g < 0.5)
+     dst.g = q;
+     else if(dst.g < 2.0 / 3.0)
+     dst.g = p + (q - p) * ((2.0 / 3.0) - dst.g) * 6.0;
+     else dst.g = p;
+     
+     if(dst.b < 1.0 / 6.0)
+     dst.b = p + (q - p) * 6.0 * dst.b;
+     else if(dst.b < 0.5)
+     dst.b = q;
+     else if(dst.b < 2.0 / 3.0)
+     dst.b = p + (q - p) * ((2.0 / 3.0) - dst.b) * 6.0;
+     else dst.b = p;
+     
+     return dst;
+ }
+ 
+ vec3 adjustColor(vec3 src, float hue, float sat) //hue should be positive
+ {
+     src = RGB2HSL(src);
+     src.x += hue;
+     src.y += sat;
+     return HSL2RGB(src);
+ }
+
+vec3 tableLookUp(vec3 src, sampler2D table)
+{
+ src.r = texture2D(table, vec2(src.r, 0.0)).r;
+ src.g = texture2D(table, vec2(src.g, 0.0)).g;
+ src.b = texture2D(table, vec2(src.b, 0.0)).b;
+ return src;
+}
+
+vec3 overLay(vec3 src1, vec3 src2, float alpha)
+{
+ if(src1.r < 0.5)
+     src2.r = (src1.r * src2.r) * 2.0;
+ else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+ 
+ if(src1.g < 0.5)
+     src2.g = (src1.g * src2.g) * 2.0;
+ else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+ 
+ if(src1.b < 0.5)
+     src2.b = (src1.b * src2.b) * 2.0;
+ else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+ 
+ return mix(src1, src2, alpha);
+}
+
+ vec3 lighten(vec3 src1, vec3 src2, float alpha)
+ {
+     return mix(src1, max(src1, src2), alpha);
+ }
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex1 = texture2D(SamplerBackTex1, textureCoordinate);
+    vec4 tex2 = texture2D(SamplerBackTex2, textureCoordinate);
+    vec4 tex3 = texture2D(SamplerBackTex3, textureCoordinate);
+    vec4 tex4 = texture2D(SamplerBackTex4, textureCoordinate);
+
+    src = adjustColor(src, 0.0, -0.18);
+    src = lighten(src, tex1.rgb, 0.12 * tex1.a);
+    src = mix(src, tex2.rgb, 0.35 * tex2.a);
+    src = lighten(src, tex3.rgb, 0.8 * tex3.a);
+    src = lighten(src, tex4.rgb, 0.1 * tex4.a);
+    gl_FragColor = vec4(src, 1.0);
+}

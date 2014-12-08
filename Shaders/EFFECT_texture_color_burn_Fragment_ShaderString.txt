@@ -1,0 +1,21 @@
+
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform float strength;
+
+vec3 colorBurn(vec3 src1, vec3 src2, float alpha)
+{
+    /// plus 0.00003 to avoid dividing by float zero
+    return mix(src1, 1.0 - min((1.0 - src1) / (src2 + 0.00003), 1.0), alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    
+    src = colorBurn(src, tex.rgb, strength * tex.a);
+    gl_FragColor = vec4(src, 1.0);
+}

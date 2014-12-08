@@ -1,0 +1,30 @@
+ precision highp float;
+ varying highp vec2 textureCoordinate;
+ uniform sampler2D inputImageTexture;
+ 
+ uniform float widthStep;
+ uniform float heightStep;
+ uniform float aspectRatio;
+ 
+ const float low = 20.0;
+ const float fac = 0.0073;//= 60787.0;
+ 
+ void main()
+{
+	float scale = aspectRatio < 1.0 ? 502.65 * heightStep : 502.65 * widthStep;
+	vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+	vec2 gradient = textureCoordinate / vec2(widthStep, heightStep) * scale;
+	highp float lum = dot(src, vec3(0.299, 0.587, 0.114));//src.r * 0.299 + src.g * 0.587 + src.b * 0.114;
+	float ps = gradient.x;
+	float ps1 = gradient.x + scale;
+	float alfx = (sin(ps1) - sin(ps)) / (ps1 - ps);
+	ps = gradient.y;
+	ps1 = gradient.y + scale;
+	float alfy = (sin(ps1) - sin(ps)) / (ps1 - ps);
+	float fa = alfx * alfy * 0.1668 + 0.8333;
+	lum = lum * fa;
+	lum = lum * 1.86 - 0.146;// / 8355840.0;
+	
+	src = mix(vec3(0.3137, 0.1569, 0.6275),vec3(1.0, 1.0, 0.0), lum);
+    gl_FragColor = vec4(src, 1.0);
+}

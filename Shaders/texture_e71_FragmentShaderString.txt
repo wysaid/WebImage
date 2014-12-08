@@ -1,0 +1,32 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+
+uniform float aspectRatio;
+uniform float strength;
+
+ vec3 lighten(vec3 src1, vec3 src2, float alpha)
+ {
+     return mix(src1, max(src1, src2), alpha);
+ }
+
+void main(void)
+{
+	vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+	vec2 coord = textureCoordinate;
+	float tmpRatio = aspectRatio / 1.5185;
+	if(tmpRatio > 1.0)
+	{
+		coord /= vec2(1.0, tmpRatio);
+	}
+	else
+	{
+		coord *= vec2(tmpRatio, 1.0);
+	}
+    vec3 tex = texture2D(SamplerBackTex1, coord).rgb;
+    
+    tex = lighten(src, tex, 0.4);
+    
+    gl_FragColor = vec4(mix(src, tex, strength), 1.0);
+}

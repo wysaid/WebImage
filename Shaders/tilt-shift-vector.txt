@@ -1,0 +1,43 @@
+/*
+@ author: wysaid
+@ blog: blog.wysaid.org
+@ mail: admin@wysaid.org
+@ date: 2013-9-10
+*/
+
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform float widthStep;
+uniform float heightStep;
+
+uniform float blurRadius;// = 35.0;
+uniform float gradientRadius;// = 200.0;
+uniform vec2 passPos;
+uniform vec2 vectorNormal;
+uniform vec2 delta;// = vec2(-2.5, 2.5);
+uniform bool isFlip;
+
+const float samplerRadius = 20.0;
+
+float random(vec3 scale, float seed) {
+    return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+}
+void main() 
+{
+    vec4 color = vec4(0.0);
+    vec2 texStep = vec2(widthStep, heightStep);
+    vec2 coord = isFlip ? vec2(textureCoordinate.x, 1.0 - textureCoordinate.y) : textureCoordinate;
+    float total = 0.0;
+    float offset = 0.5;//random(vec3(12.9898, 78.233, 151.7182), 0.0);
+    float radius = smoothstep(0.0, 1.0, abs(dot(coord / texStep - passPos, vectorNormal)) / gradientRadius) * blurRadius;
+    for (float t = -samplerRadius; t <= samplerRadius; t++) {
+        float percent = (t + offset - 0.5) / samplerRadius;
+        float weight = 1.0 - abs(percent);
+        vec4 sample = texture2D(inputImageTexture, coord + delta * texStep * percent * radius);
+        color += sample * weight;
+        total += weight;
+    }
+
+    gl_FragColor = color / total;
+}

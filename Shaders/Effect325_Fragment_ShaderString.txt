@@ -1,0 +1,93 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+
+vec3 blackWhite(vec3 src)
+{
+    float f = (max(max(src.r, src.g), src.b) + min(min(src.r, src.g), src.b)) / 2.0;
+    return vec3(f, f, f);
+}
+
+vec3 levelSP(vec3 src, float dark, float light)  //dark,light: (0~1)
+{
+    float range  = light - dark;
+    
+    if(src.r < dark)
+        src.r = 0.0;
+    else if(src.r > light)
+        src.r = 1.0;
+    else
+    {
+        src.r = (src.r - dark) / range;
+    }
+    
+    if(src.g < dark)
+        src.g = 0.0;
+    else if(src.g > light)
+        src.g = 1.0;
+    else
+    {
+        src.g = (src.g - dark) / range;
+    }
+    if(src.b < dark)
+        src.b = 0.0;
+    else if(src.b > light)
+        src.b = 1.0;
+    else
+    {
+        src.b = (src.b - dark) / range;
+    }
+    return src;
+}
+vec3 gammaSP(vec3 src, float value) //value: 0~1
+{
+ return clamp(pow(src, vec3(value, value, value)), 0.0, 1.0);
+}
+
+vec3 brightness(vec3 src, float value)  //value should not be zero
+{
+ const float SQRT2 = 1.41421;
+ float fac = (SQRT2 * 100.0) / value;
+
+ if(value > 0.0)
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ else
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ return src;
+}
+
+vec3 multiply(vec3 src1, vec3 src2, float alpha)
+{
+ return mix(src1, src1 * src2, alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    src = brightness(src, 19.0);
+    src = blackWhite(src);
+    src = levelSP(src, 0.203, 0.9686);
+    src = gammaSP(src, 1.0 / 1.10);
+    src = multiply(src, tex.rgb, tex.a * 0.41);
+    gl_FragColor = vec4(src, 1.0);
+}

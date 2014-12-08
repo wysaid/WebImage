@@ -1,0 +1,72 @@
+ precision highp float;
+ varying highp vec2 textureCoordinate;
+ uniform sampler2D inputImageTexture;
+ 
+ uniform float widthStep;
+ uniform float heightStep;
+ 
+ const float ratio = 1.25;
+ 
+vec3 soft_light_l3s(vec3 a, vec3 b)
+{
+    vec3 src;
+    a = a * 2.0 - 32768.0;
+
+    float tmpr = a.r > 0.0 ? sqrt(b.r)  - b.r : b.r - b.r * b.r;
+    src.r = a.r * tmpr / 128.0 + b.r * 256.0;
+    
+    float tmpg = a.g > 0.0 ? sqrt(b.g)  - b.g : b.g - b.g * b.g;
+    src.g = a.g * tmpg / 128.0 + b.g * 256.0;
+    
+    float tmpb = a.b > 0.0 ? sqrt(b.b)  - b.b : b.b - b.b * b.b;
+    src.b = a.b * tmpb / 128.0 + b.b * 256.0;
+    return src;
+}
+ 
+ vec3 getColor(int n)
+{
+	if(n == 0)
+		return vec3(0.0, 8000.0, 25000.0);
+	if(n == 1)
+		return vec3(0.0, 32768.0, 0.0);
+	if(n == 3)
+		return vec3(32768.0, 32768.0, 0.0);
+	if(n == 4)
+		return vec3(32768.0, 8000.0, 0.0);
+	return vec3(32768.0, 0.0, 0.0);
+}
+ 
+ void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec2 tmpCoord = textureCoordinate * 32768.0 * ratio;
+    float ps = tmpCoord.x + tmpCoord.y;
+    int pi = int(ps / 16384.0);
+    float pr = mod(ps, 16384.0) / 16384.0;
+    vec3 v1 = getColor(pi);
+    vec3 v2 = getColor(pi + 1);
+    
+    vec3 tmp1 = v1 * (1.0 - pr) + v2 * pr;
+    vec3 tmp2 = src * mat3(0.509, 0.4109, 0.07978,
+                           0.209, 0.7109, 0.07978,
+                           0.209, 0.4109, 0.3798);
+    
+    src = soft_light_l3s(tmp1, tmp2);
+    
+//    {
+//        float rr = (v1.r * (16384.0 - pr) + v2.r * pr) / 16384.0;
+//        float red = src.r * 16688.0 + src.g * 13464.0 + src.b * 2614.0;
+//        dst.r = soft_light_l(rr, red / 256.0);
+//    }
+//    {
+//        float rg = (v1.g * (16384.0 - pr) + v2.g * pr) / 16384.0;
+//        float green = src.r * 6858.0 + src.g * 23294.0 + src.b * 2614.0;
+//        dst.g = soft_light_l(rg, green / 256.0);
+//    }
+//    {
+//        float rb = (v1.b * (16384.0 - pr) + v2.b * pr) / 16384.0;
+//        float blue = src.r * 6858.0 + src.g * 13464.0 + src.b * 12445.0;
+//        dst.b = soft_light_l(rb, blue / 256.0);
+//    }
+	gl_FragColor = vec4(src / 255.0, 1.0);
+}

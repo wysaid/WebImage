@@ -1,0 +1,36 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform  float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+const vec3 c1 = vec3(0.992,0.137,0.314);
+const vec3 c2 = vec3(0.204,0.98,0.725);
+
+const vec2 vignetteCenter = vec2(0.5, 0.5);   // the center for the vignette in tex coords (defaults to 0.5, 0.5)
+//uniform vec3 vignetteColor = vec3(1.0, 1.0, 1.0); // The color to use for the Vignette (defaults to black)
+uniform  float vignetteStart;  // The normalized distance from the center where the vignette effect starts. Default of 0.
+uniform  float vignetteRange;  // The normalized range from the vignette effect start and ends. Default of 0.5.
+uniform  float aspectRatio;
+
+void main(void)
+{
+    vec3 src;
+    vec3 dst;
+    float alpha;
+    
+    src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    float d = distance(textureCoordinate, vec2(vignetteCenter.x, vignetteCenter.y));
+    // float percent = smoothstep(vignetteStart, vignetteStart+vignetteRange, d);
+    float percent = clamp((d-vignetteStart)/vignetteRange, 0.0, 1.0);
+    alpha = 1.0-percent;// * percent;
+    
+    vec3 tmp = dst * alpha;
+    
+	dst.r = 1.0 - (1.0 - tmp.r*c1.r) * (1.0 - tmp.g*c2.r);
+	dst.g = 1.0 - (1.0 - tmp.r*c1.g) * (1.0 - tmp.g*c2.g);
+	dst.b = 1.0 - (1.0 - tmp.r*c1.b) * (1.0 - tmp.g*c2.b);
+    
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

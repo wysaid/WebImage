@@ -1,0 +1,69 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerFrameTexM0;
+uniform sampler2D SamplerFrameTexM1;
+uniform sampler2D SamplerFrameTexM2;
+uniform sampler2D SamplerFrameTexM3;
+uniform sampler2D SamplerFrameTexM4;
+uniform sampler2D SamplerFrameTexM5;
+uniform sampler2D SamplerFrameTexM6;
+uniform sampler2D SamplerFrameTexM7;
+
+uniform float thickness;
+
+uniform float widthStep;
+uniform float heightStep;
+uniform float frameLengthV;
+uniform float frameLengthH;
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+
+    if(textureCoordinate.x <= thickness && textureCoordinate.y <= thickness)
+    {
+    	vec4 frameLeftTop = texture2D(SamplerFrameTexM0, textureCoordinate / thickness);
+    	src = mix(src, frameLeftTop.rgb, frameLeftTop.a);
+    }
+    else if(textureCoordinate.x <= 1.0 - thickness && textureCoordinate.y <= thickness)
+    {
+    	vec4 frameTop = texture2D(SamplerFrameTexM1, vec2(mod((textureCoordinate.x - thickness), frameLengthH) / frameLengthH, textureCoordinate.y / thickness));
+    	src = mix(src, frameTop.rgb, frameTop.a);    		
+    }
+    else if(textureCoordinate.y <= thickness)
+    {
+    	vec4 frameRightTop = texture2D(SamplerFrameTexM2, vec2((textureCoordinate.x - 1.0 + thickness) / thickness, textureCoordinate.y / thickness));
+    	src = mix(src, frameRightTop.rgb, frameRightTop.a);
+    }
+    else if(textureCoordinate.y <= 1.0 - thickness && textureCoordinate.x >= 1.0 - thickness)
+    {
+    	vec4 frameRight = texture2D(SamplerFrameTexM3, vec2((textureCoordinate.x - 1.0 + thickness) / thickness, mod(textureCoordinate.y - thickness, frameLengthV) / frameLengthV));
+    	src = mix(src, frameRight.rgb, frameRight.a);
+    }
+    else if(textureCoordinate.y <= 1.0 - thickness && textureCoordinate.x <= thickness)
+    {
+    	vec4 frameLeft = texture2D(SamplerFrameTexM7, vec2(textureCoordinate.x / thickness, mod(textureCoordinate.y - thickness, frameLengthV) / frameLengthV));
+    	src = mix(src, frameLeft.rgb, frameLeft.a);
+    }
+    else if(textureCoordinate.y >= 1.0 - thickness)
+    {
+    	if(textureCoordinate.x <= thickness)
+    	{
+    		vec4 frameLeftBottom = texture2D(SamplerFrameTexM6, vec2(textureCoordinate.x / thickness, (textureCoordinate.y - 1.0 + thickness) / thickness));
+    		src = mix(src, frameLeftBottom.rgb, frameLeftBottom.a);
+    	}
+    	else if(textureCoordinate.x <= 1.0 - thickness)
+    	{
+    		vec4 frameBottom = texture2D(SamplerFrameTexM5, vec2(mod(textureCoordinate.x - thickness, frameLengthH) / frameLengthH, (textureCoordinate.y - 1.0 + thickness) / thickness));
+    		src = mix(src, frameBottom.rgb, frameBottom.a);
+    	}
+    	else 
+    	{
+			vec4 frameRightBottom = texture2D(SamplerFrameTexM4, (textureCoordinate - 1.0 + thickness) / thickness);
+			src = mix(src, frameRightBottom.rgb, frameRightBottom.a);
+    	}
+    }
+
+    gl_FragColor = vec4(src, 1.0);
+}

@@ -1,0 +1,81 @@
+/*
+@ author: wysaid
+@ blog: blog.wysaid.org
+@ mail: admin@wysaid.org
+@ date: 2013-9-10
+*/
+
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform float widthStep;
+uniform float heightStep;
+
+uniform float blurRadius;// = 0.1;
+//uniform float blurRadiusStart;
+uniform vec2 blurRadiusStart;
+
+uniform float gradientRadius;// = 0.5;
+uniform vec2 centralPos;// = vec2(0.5, 0.5);
+uniform vec2 vectorNormal;
+uniform bool isFlip;// = false;
+
+const float samplerRadius = 20.0;
+const float PI = 3.141593;
+
+float random(vec3 scale, float seed) {
+    return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+}
+
+void main() 
+{    
+    vec2 coord = isFlip ? vec2(textureCoordinate.x, 1.0 - textureCoordinate.y) : textureCoordinate;
+    if(pow((coord.x - centralPos.x)/blurRadiusStart.x, 2.0) + pow((coord.y - centralPos.y)/blurRadiusStart.y, 2.0) <= 1.0)
+    {
+        gl_FragColor = texture2D(inputImageTexture, coord);
+        return;
+    }
+    float total = 0.0;
+    float offset = random(vec3(12.9898, 78.233, 151.7182), 0.0);
+    vec2 gradientRadiusStart = blurRadiusStart * gradientRadius;
+    vec2 texStep = vec2(widthStep, heightStep);
+    vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+
+    if(pow((coord.x - centralPos.x)/gradientRadiusStart.x, 2.0) + pow((coord.y - centralPos.y)/gradientRadiusStart.y, 2.0) <= 1.0) //(radius <= blurRadiusStart + gradientRadius)
+    {
+        vec2 norm = coord - centralPos;
+        float radius = length(norm);
+        float k = norm.y / norm.x;
+        float sa2 = blurRadiusStart.x * blurRadiusStart.x;
+        float sb2 = blurRadiusStart.y * blurRadiusStart.y;
+        float sxPoint = sqrt(sa2 * sb2 / (sb2 + sa2 * k * k));
+        float sRadius = abs(sxPoint / (norm.x / radius));
+
+        float ea2 = gradientRadiusStart.x * gradientRadiusStart.x;
+        float eb2 = gradientRadiusStart.y * gradientRadiusStart.y;
+        float exPoint = sqrt(ea2 * eb2 / (eb2 + ea2 * k * k));
+        float eRadius = abs(exPoint / (norm.x / radius));
+        float range = eRadius - sRadius;
+        radius -= sRadius;
+        for (float t = -samplerRadius; t <= samplerRadius; t++) {
+            float percent = (t + offset - 0.5) / samplerRadius;
+            float weight = 1.0 - abs(percent);
+            vec4 sample = texture2D(inputImageTexture, coord + vectorNormal * texStep * percent * blurRadius * radius / range);
+            color += sample * weight;
+            total += weight;
+        }
+        color /= total;
+    }
+    else
+    {
+        for (float t = -samplerRadius; t <= samplerRadius; t++) {
+            float percent = (t + offset - 0.5) / samplerRadius;
+            float weight = 1.0 - abs(percent);
+            vec4 sample = texture2D(inputImageTexture, coord + vectorNormal * texStep * percent * blurRadius);
+            color += sample * weight;
+            total += weight;
+        }
+        color /= total;
+    }
+    gl_FragColor = color;
+}

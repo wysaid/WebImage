@@ -1,0 +1,387 @@
+﻿<html>
+<head>
+<title> WebGL FX V1.2 by wysaid </title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+.fxNotChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #ffd0d0;
+	overflow: hidden;
+}
+.fxChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #ff0000;
+	overflow: hidden;
+}
+
+.frameNotChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #d0ffd0;
+	overflow: hidden;
+}
+
+.frameChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #00ff00;
+	overflow: hidden;
+}
+
+.cardNotChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #d0d0ff;
+	overflow: hidden;
+}
+
+.cardChosen
+{
+	border:groove; position:relative;display:block;width:100%;height:30px;text-align:center;cursor:pointer;
+	background-color: #0000ff;
+	overflow: hidden;
+}
+
+.effectsNotChosen 
+{
+	border:groove; display:block;text-align:center;cursor:pointer;
+	margin:4px 4px;border:groove;width:auto; height:25px; float:left;
+	background-color: #ffffd0;
+}
+
+.effectsChosen
+{
+	border:groove; display:block;text-align:center;cursor:pointer;
+	margin:4px 4px;border:groove;width:auto; height:25px; float:left;
+	background-color: #ffff00;
+}
+
+.canvasFull
+{
+	border:solid; margin: 10px; position: absolute;
+	top:100%;
+	left: -12%;
+}
+
+.canvasFit
+{
+	border:solid;width:80%;height:80%; margin:0px auto auto 0px;
+}
+
+.curveR {background-color:#000;position:absolute;left:25%;top:0%;width:25%;height:100%;border:groove;cursor:crosshair;}
+.curveG {background-color:#000;position:absolute;left:50%;top:0%;width:25%;height:100%;border:groove;cursor:crosshair;}
+.curveB {background-color:#000;position:absolute;left:75%;top:0%;width:25%;height:100%;border:groove;cursor:crosshair;}
+.curveRGB {background-color:#000;position:absolute;left:0%;top:0%;width:25%;height:100%;border:groove;cursor:crosshair;}
+
+</style>
+<script type="text/javascript" src="JavaScripts/uifunctions.js"></script>
+<script type="text/javascript" src="JavaScripts/effectsEnum.js"></script>
+<script type="text/javascript" src="JavaScripts/glfunctions.js"></script>
+<script type="text/javascript" src="JavaScripts/myfunctions.js"></script>
+<script type="text/javascript" src="JavaScripts/fxfunctions.js"></script>
+<script type="text/javascript" src="JavaScripts/framefunctions.js"></script>
+<script type="text/javascript" src="JavaScripts/renderfunction.js"></script>
+<script type="text/javascript" src="JavaScripts/curveAdjust.js"></script>
+<script type="text/javascript" id="mainjs">
+function resizeCanvs() {
+	var c = document.getElementById("fxView");
+	var d = document.getElementById("canvasView");
+	c.setAttribute("width", d.clientWidth);
+	c.setAttribute("height", d.clientHeight);
+}
+</script>
+</head>
+
+<body onload="uiPrintMaxTextureSize();resizeCanvs();renderWave('wave-h-v');uiAppendLog('Loading complete!');uiCurveViewResize()" onresize="uiResizeCanvas();uiCurveViewResize()">
+
+<script id="default-vsh" type="x-shader/x-vertex">
+precision mediump float;
+attribute vec4 position;
+attribute vec2 inputTextureCoordinate;
+varying vec2 textureCoordinate;
+void main()
+{
+	gl_Position = position;
+	textureCoordinate = vec2((position.x+1.0)/2.0, 1.0-(position.y+1.0)/2.0);
+}
+</script>
+<script type="x-shader/x-fragment" id="default-fsh">
+precision mediump float;
+varying vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+void main()
+{
+	gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
+}
+</script>
+<script id="curve-vsh" type="x-shader/x-vertex">
+attribute vec4 position;
+varying vec2 textureCoordinate;
+void main()
+{
+	gl_Position = position;
+	textureCoordinate = vec2((position.x+1.0)/2.0, 1.0-(position.y+1.0)/2.0);
+}
+</script>
+<script type="x-shader/x-fragment" id="curve-fsh">
+precision mediump float;
+varying vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D curveTexture;
+void main()
+{
+	vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+	src.r = texture2D(curveTexture, vec2(src.r, 0.0)).r;
+	src.g = texture2D(curveTexture, vec2(src.g, 0.0)).g;
+	src.b = texture2D(curveTexture, vec2(src.b, 0.0)).b;
+	gl_FragColor = vec4(src, 1.0);
+}
+
+</script>
+<script type="text/javascript">
+
+var lastFX = null;
+var lastEffect = null;
+var lastFrame = null;
+var lastCard = null;
+
+function doFX(obj) 
+{
+	if (lastFX != null)
+			lastFX.setAttribute("class", "fxNotChosen");		
+	if (lastEffect != null)
+	{
+		lastEffect.setAttribute("class", "effectsNotChosen");
+		lastEffect = null;
+	}
+	if (lastFrame != null)
+	{
+		lastFrame.setAttribute("class", "frameNotChosen");
+		lastFrame = null;
+	}
+	if(lastCard != null)
+	{
+		lastCard.setAttribute("class", "cardNotChosen");
+		lastCard = null;
+		uiResizeCanvas();
+	}
+	obj.setAttribute("class", "fxChosen");
+	lastFX = obj;
+	uiAppendLog(obj.id + " start running...");
+}
+
+function doEffects(obj) 
+{
+	if (lastEffect != null) 
+		lastEffect.setAttribute("class", "effectsNotChosen");
+	if (lastFX != null)
+	{
+		lastFX.setAttribute("class", "fxNotChosen");
+		lastFX = null;
+	}
+	if (lastFrame != null)
+	{
+		lastFrame.setAttribute("class", "frameNotChosen");
+		lastFrame = null;
+	}
+	if(lastCard != null)
+	{
+		lastCard.setAttribute("class", "cardNotChosen");
+		lastCard = null;
+		uiResizeCanvas();
+	}
+	obj.setAttribute("class", "effectsChosen");
+	lastEffect = obj;
+	uiAppendLog(obj.id + " start running...");
+}
+
+function doFrame(obj) 
+{
+	if (lastFrame != null) 
+		lastFrame.setAttribute("class", "frameNotChosen");
+	if (lastFX != null)
+	{
+		lastFX.setAttribute("class", "fxNotChosen");
+		lastFX = null;
+	}
+	if (lastEffect != null)
+	{
+		lastEffect.setAttribute("class", "effectsNotChosen");
+		lastEffect = null;
+	}
+	if(lastCard != null)
+	{
+		lastCard.setAttribute("class", "cardNotChosen");
+		lastCard = null;
+		uiResizeCanvas();
+	}
+	obj.setAttribute("class", "frameChosen");
+	lastFrame = obj;
+	uiAppendLog(obj.id + " start running...");
+}
+
+function doCard(obj)
+{
+	if (lastCard != null) 
+		lastCard.setAttribute("class", "cardNotChosen");
+	if (lastFX != null)
+	{
+		lastFX.setAttribute("class", "fxNotChosen");
+		lastFX = null;
+		uiFitCardView();
+	}
+	if (lastEffect != null)
+	{
+		lastEffect.setAttribute("class", "effectsNotChosen");
+		lastEffect = null;
+		uiFitCardView();
+	}
+	if(lastFrame != null)
+	{
+		lastFrame.setAttribute("class", "frameNotChosen");
+		lastFrame = null;
+		uiFitCardView();
+	}
+	obj.setAttribute("class", "cardChosen");
+	lastCard = obj;
+	uiAppendLog(obj.id + " start running...");
+}
+
+function choosePicture(obj)
+{
+	var tmpImg = document.getElementById("inputImage");
+	tmpImg.onload = function (){
+		renderGLWithScriptName("default-fsh");
+	}
+	tmpImg.src = obj.options[obj.selectedIndex].value;
+	uiAppendLog("Changing SourceImage...");
+}
+
+</script>
+<div style="position:relative; margin:0px auto 10px 10px; width:46.5%; max-height:20%; border:groove; overflow-y:auto;overflow-x:hidden" id="myEffectsView" >
+
+<script type="text/javascript">
+
+var menu = document.getElementById("myEffectsView");
+for (obj in effectsEnum) {
+	var child = document.createElement("div");
+	child.setAttribute("class", "effectsNotChosen");
+	child.setAttribute("onclick", "doEffects(this);renderGLWithScriptName('" + effectsEnum[obj] + "')");
+	child.setAttribute("id", "effect_" + effectsEnum[obj]);
+	child.innerHTML = effectsEnum[obj];
+	menu.appendChild(child);
+}
+
+</script>
+</div>
+
+<div style="position:absolute; left: 50%; top: 5px;width:46.5%;height:100px;border:groove;" id="curveAdjustView" >
+<div class="curveRGB" id="curveRGB" onmousedown="isRGBDown=true;" onmouseup="isRGBDown=false;pushBackPoints(this, event, 0)" onmousemove="if(isRGBDown){drawTmpPoints(this, event, 0);}"><canvas id="curveRGBView" style="width:100%;height:100%"></canvas></div>
+<div class="curveR" id="curveR" onmousedown="isRDown=true;" onmouseup="isRDown=false;pushBackPoints(this, event, 1)" onmousemove="if(isRDown){drawTmpPoints(this, event, 1);}"><canvas id="curveRView" style="width:100%;height:100%"></canvas></div>
+<div class="curveG" id="curveG" onmousedown="isGDown=true;" onmouseup="isGDown=false;pushBackPoints(this, event, 2)" onmousemove="if(isGDown){drawTmpPoints(this, event, 2);}"><canvas id="curveGView" style="width:100%;height:100%"></canvas></div>
+<div class="curveB" id="curveB" onmousedown="isBDown=true;" onmouseup="isBDown=false;pushBackPoints(this, event, 3)" onmousemove="if(isBDown){drawTmpPoints(this, event, 3);}"><canvas id="curveBView" style="width:100%;height:100%"></canvas></div>
+</div>
+
+<div style="position:absolute; margin:10px auto auto 12%; width:72%; height:82%;max-height:85%; border:groove;" id ="centerView">
+<div class="canvasFit" id="canvasView">
+<canvas id="fxView"></canvas>
+</div>
+<textarea id="introduction" style="border:groove;position:absolute;margin:auto;width:18.5%;height:40%;top:1px;left:81%" readonly="true">
+简介：
+作者： wysaid
+博客: blog.wysaid.org
+注意事项: 第一次使用任何特效时， 会同步加载图片、shader资源。 本程序只是一个demo，为了防止你乱点，当一次资源尚未加载完毕之前是不允许再点其他的效果滴。 已经加载过的资源不会重新加载。 所以你第一次点击某个效果时等待的时间并不是这个效果计算出所需要的时间， 仅仅是在等待龟速的网络而已。 重新点它时， 等待的时间才是真实的时间哟。 一般来说一瞬间就完成了。
+这个是陈年老物了， bug无数， 内存泄露什么的也没管( @_@b 听说js不用管呀？)，同学们可以到我的博客搜索webgl即可找到完整的代码链接。
+</textarea>
+<div style="position:absolute;with:18.5%;top:43%;left:81%;overflow:hidden;">
+Choose an image:
+</div>
+<div style="position:absolute;margin:auto;left:81%;top:55%;width:18.5%;">
+<input type="button" value="Stop motion" title="Stop the motion of some effects" onclick="clearInterval(g_timeInterval);g_timeInterval=null;"><br>
+<input type="button" value="Show Picture" title="Show full size of original picture." onclick="uiShowPicture()"><br>
+<input type="button" value="Greater Canvas" title="Enlarge canvas to the size of original picture." onclick="uiGreaterCanvas()"><br>
+<input type="button" value="Resize Canvas" title="Resize canvas to fit the window." onclick="uiResizeCanvas()">
+
+</div>
+<select style="position:absolute; top:48%; left:81%;width:18.5%" id="pictureSelect" onchange="choosePicture(this)">
+<script type="text/javascript">
+var menu = document.getElementById("pictureSelect");
+
+for(obj in sourcePicEnum)
+{
+	var child = document.createElement("option");
+	child.setAttribute("value", sourcePicEnum[obj]);
+	child.innerHTML = sourcePicEnum[obj];
+	menu.appendChild(child);
+}
+</script>
+</select>
+<div style="border:groove;position:absolute;margin:auto;width:100%;height:19%;top:81%;">
+
+<textarea id="logText" style="border:groove;position:absolute;margin:auto;width:50%;height:100%;left:1px">WebGL is loading resouce...
+</textarea>
+<input type="button" value="Clear log" title="Clear log on in the left text-area" onclick="uiClearLog()" style="position:absolute;top:5%;left:51%">
+<input type="button" value="Greater log" title="Greater the size of log box" onclick="uiGreaterLog()" style="position:absolute;top:35%;left:51%">
+<input type="button" value="Resize log" title="Resize the log box to normal size" onclick="uiResizeLog()" style="position:absolute;top:65%;left:51%">
+</div>
+</div>
+<div style="position:absolute; margin:10px auto auto 8px; width:10%; height:82%;max-height:85%; border:groove;overflow-y:auto;overflow-x:hidden" id="menuView">
+<script type="text/javascript">
+
+var menu = document.getElementById("menuView");
+
+for (var i = 0; i != fxNum; ++i) {
+	var child = document.createElement("div");
+	child.setAttribute("class", "fxNotChosen");
+	child.setAttribute("onclick", "doFX(this);renderGLWithFXNumber(" + i + ")");
+	child.setAttribute("id", "fx_" + i);
+	if(fxShaderEnum[i] == "nil" || fxShaderEnum[i] == "") {
+		child.innerHTML = "Unavailable";
+	}
+	else child.innerHTML = "FX: " + (i + 1);
+	menu.appendChild(child);
+}
+
+</script>
+</div>
+
+<div style="position:absolute; margin:10px auto auto 86%; width:10%; height:82%;max-height:85%; border:groove;overflow-y:hidden;overflow-x:hidden">
+<div id="frameView" style="position:relative;height:49%;overflow-x:hidden;border:groove;overflow-y:auto">
+<script type="text/javascript">
+var menu = document.getElementById("frameView");
+for (var i = 1; i != frameNum; ++i) {
+	var child = document.createElement("div");
+	child.setAttribute("class", "frameNotChosen");
+	child.setAttribute("onclick", "doFrame(this);renderGLWithFrameNumber(" + i + ")");
+	child.setAttribute("id", "frame_" + i);
+	if(frameDefEnum[i].charAt(0) == " ")
+		child.innerHTML = "Unavailable";
+	else child.innerHTML = "Frame: " + i;
+	menu.appendChild(child);
+}
+</script>
+</div>
+
+<div id="cardView" style="margin: 2% 0 0 0;position:relative;height:49%;overflow-x:hidden;overflow-y:auto;border:groove;">
+<script type="text/javascript">
+var menu = document.getElementById("cardView");
+for (var i = 160; i != 183; ++i) {
+	var child = document.createElement("div");
+	child.setAttribute("class", "cardNotChosen");
+	child.setAttribute("onclick", "doCard(this);renderGLWithCardNumber(" + i + ")");
+	child.setAttribute("id", "card_" + i);
+	child.innerHTML = "Card: " + (i - 159);
+	menu.appendChild(child);
+}
+</script>
+</div>
+</div>
+
+<img src = "Resource/girl.jpg" style="display:none" id="inputImage">
+</body>
+<div style="display:none">
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=23413950" charset="UTF-8"></script>
+</div>
+</html>

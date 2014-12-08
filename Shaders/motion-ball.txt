@@ -1,0 +1,26 @@
+/*
+@ author: wysaid
+@ blog: blog.wysaid.org
+@ mail: admin@wysaid.org
+@ date: 2013-9-12
+*/
+
+precision mediump float;
+varying highp vec2 textureCoordinate;
+//uniform sampler2D inputImageTexture;
+uniform float width;
+uniform float height;
+
+uniform vec2 pos;
+
+uniform float radius;
+
+float random(vec3 scale, float seed) {
+    return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+}
+void main()
+{
+    float dis = distance(textureCoordinate, pos);
+    //if(dis > radius) gl_FragColor = vec4(0.0,0.0,0.0,0.99);
+    /*else*/ gl_FragColor = vec4(textureCoordinate / smoothstep(0.001, 10.0, dis * 100.0), 0.0,1.0);
+}

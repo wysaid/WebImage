@@ -1,0 +1,39 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+const vec2 vignetteCenter = vec2(0.5, 0.5);   // the center for the vignette in tex coords (defaults to 0.5, 0.5)
+//uniform vec3 vignetteColor = vec3(1.0, 1.0, 1.0); // The color to use for the Vignette (defaults to black)
+uniform highp float vignetteStart;  // The normalized distance from the center where the vignette effect starts. Default of 0.
+uniform highp float vignetteRange;  // The normalized range from the vignette effect start and ends. Default of 0.5.
+uniform highp float aspectRatio;
+
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    mediump float lum;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    //vignette
+	highp vec2 v_texCoordVignette = textureCoordinate;//textureCoordinate
+    highp vec2 textureCoordinateToUse = vec2(v_texCoordVignette.x, (v_texCoordVignette.y * aspectRatio + 0.5 - 0.5 * aspectRatio));
+    highp float d = distance(textureCoordinateToUse, vec2(vignetteCenter.x, vignetteCenter.y));
+    //highp float percent = smoothstep(vignetteStart, vignetteStart+vignetteRange, d);
+    highp float percent = clamp((d-vignetteStart)/vignetteRange, 0.0, 1.0);
+    alpha = 1.0-percent;// * percent;
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    lum = (lum - bound_l)/saturate;
+    lum = lum * alpha;
+    
+    dst = vec3(lum,lum,lum);
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

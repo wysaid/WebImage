@@ -1,0 +1,37 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+uniform sampler2D SamplerBackTex1;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+vec3 overLay(vec3 src1, vec3 src2, float alpha)
+{
+    if(src1.r < 0.5)
+        src2.r = (src1.r * src2.r) * 2.0;
+    else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+    
+    if(src1.g < 0.5)
+        src2.g = (src1.g * src2.g) * 2.0;
+    else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+    
+    if(src1.b < 0.5)
+        src2.b = (src1.b * src2.b) * 2.0;
+    else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+    
+    return mix(src1, src2, alpha);
+}
+
+vec3 colorMono(vec3 src)
+{
+   float f = dot(src, vec3(0.299, 0.587, 0.114));
+   return vec3(f,f,f);
+}
+
+void main(void)
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec3 tex = texture2D(SamplerBackTex1, textureCoordinate).rgb;
+    src = colorMono(src);
+    gl_FragColor = vec4(overLay(src, tex, strength),1.0);
+}

@@ -1,0 +1,49 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform float strength;
+
+vec3 linearDodge(vec3 src1, vec3 src2, float alpha)
+{
+ return mix(src1, min(src1 + src2, 1.0), alpha);
+}
+
+vec3 brightness(vec3 src, float value)  //value should not be zero
+{
+ const float SQRT2 = 1.41421;
+ float fac = (SQRT2 * 100.0) / value;
+
+ if(value > 0.0)
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ else
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ return src;
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    src = brightness(src, 75.0);
+    src = linearDodge(src, tex.rgb, 0.84 * tex.a);
+    gl_FragColor = vec4(src, 1.0);
+}

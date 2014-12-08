@@ -1,0 +1,73 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerBackTex2;
+uniform sampler2D SamplerBackTex3;
+
+vec3 hardLight(vec3 src1, vec3 src2, float alpha)
+{
+    if(src2.r < 0.5)
+        src2.r = (src1.r * src2.r) * 2.0;
+    else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+    
+    if(src2.g < 0.5)
+        src2.g = (src1.g * src2.g) * 2.0;
+    else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+    
+    if(src2.b < 0.5)
+        src2.b = (src1.b * src2.b) * 2.0;
+    else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+    
+    return mix(src1, clamp(src2, 0.0, 1.0), alpha);
+}
+
+vec3 overLay(vec3 src1, vec3 src2, float alpha)
+{
+    if(src1.r < 0.5)
+        src2.r = (src1.r * src2.r) * 2.0;
+    else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+    
+    if(src1.g < 0.5)
+        src2.g = (src1.g * src2.g) * 2.0;
+    else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+    
+    if(src1.b < 0.5)
+        src2.b = (src1.b * src2.b) * 2.0;
+    else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+    
+    return mix(src1, clamp(src2, 0.0, 1.0), alpha);
+}
+
+vec3 softLight(vec3 src1, vec3 src2, float alpha)
+{
+    if(src2.r < 0.5)
+        src2.r = (src2.r * 2.0 - 1.0) * (src1.r - (src1.r * src1.r)) + src1.r;
+    else src2.r = ((src2.r * 2.0 - 1.0) * (sqrt(src1.r) - src1.r)) + src1.r;
+    
+    if(src2.g < 0.5)
+        src2.g = (src2.g * 2.0 - 1.0) * (src1.g - (src1.g * src1.g)) + src1.g;
+    else src2.g = ((src2.g * 2.0 - 1.0) * (sqrt(src1.g) - src1.g)) + src1.g;
+    
+    if(src2.b < 0.5)
+        src2.b = (src2.b * 2.0 - 1.0) * (src1.b - (src1.b * src1.b)) + src1.b;
+    else src2.b = ((src2.b * 2.0 - 1.0) * (sqrt(src1.b) - src1.b)) + src1.b;
+    
+    return mix(src1, clamp(src2, 0.0, 1.0), alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec3 tex1 = 1.0 - texture2D(SamplerBackTex1, textureCoordinate).aaa;
+    vec3 tex2 = 1.0 - texture2D(SamplerBackTex2, textureCoordinate).aaa;
+    vec3 tex3 = texture2D(SamplerBackTex3, textureCoordinate).rgb;
+    
+    src = hardLight(src, tex3, 0.56);
+    
+    //Special code. Do not touch. Ask me if you have any question. -- By wang yang
+    if(tex2.r < 0.1) src = overLay(src, tex2, 1.0);
+    if(tex1.r < 0.1) src = softLight(src, tex1, 1.0);
+    
+    gl_FragColor =  vec4(src, 1.0);
+}

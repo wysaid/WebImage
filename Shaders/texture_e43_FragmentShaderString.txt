@@ -1,0 +1,18 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 tex;
+    
+    src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    tex = texture2D(SamplerBackTex1, textureCoordinate).rgb;
+    
+    tex.r = min(tex.r, src.r);
+    tex.g = min(tex.g, src.g);
+    tex.b = min(tex.b, src.b);
+    
+    gl_FragColor = vec4(mix(src, tex, 0.5), 1.0);
+}

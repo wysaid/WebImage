@@ -1,0 +1,227 @@
+precision highp float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+const float dark1 = 10.0 / 255.0;
+const float light1 = 236.0 / 255.0;
+
+const float dark2 = 57.0 / 255.0;
+const float light2 = 240.0/255.0;
+const float middle2 = 1.0 / 1.31;
+
+vec3 blackWhite(vec3 src)
+{
+    float f = (max(max(src.r, src.g), src.b) + min(min(src.r, src.g), src.b)) / 2.0;
+    return vec3(f, f, f);
+}
+
+ vec3 levelSP(vec3 src, float dark, float light)  //dark,light: (0~1)
+ {
+     float range  = light - dark;
+     
+     if(src.r < dark)
+         src.r = 0.0;
+     else if(src.r > light)
+         src.r = 1.0;
+     else
+     {
+         src.r = (src.r - dark) / range;
+     }
+     
+     if(src.g < dark)
+         src.g = 0.0;
+     else if(src.g > light)
+         src.g = 1.0;
+     else
+     {
+         src.g = (src.g - dark) / range;
+     }
+     if(src.b < dark)
+         src.b = 0.0;
+     else if(src.b > light)
+         src.b = 1.0;
+     else
+     {
+         src.b = (src.b - dark) / range;
+     }
+     return src;
+ }
+ 
+ vec3 gammaSP(vec3 src, float value) //value: 0~1
+ {
+     return clamp(pow(src, vec3(value, value, value)), 0.0, 1.0);
+ }
+
+float gammaSP1(float src, float value)
+{
+    return clamp(pow(src, value), 0.0, 1.0);
+}
+
+vec3 brightness(vec3 src, float value)  //value should not be zero
+{
+ const float SQRT2 = 1.41421;
+ float fac = (SQRT2 * 100.0) / value;
+
+ if(value > 0.0)
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ else
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ return src;
+}
+
+float levelSP1(float src, float dark, float light)
+{
+    if(src < dark) src = 0.0;
+    else if(src > light) src = 1.0;
+    else src = (src - dark) / (light - dark);
+    return src;
+}
+
+float brightness1(float src, float value)
+{
+    const float SQRT2 = 1.41421;
+    float fac = (SQRT2 * 100.0) / value;
+    if(value > 0.0)
+    {
+        float tmp = 1.0 - src - (fac / SQRT2) + sqrt(1.0 - SQRT2 * fac + (2.0 * SQRT2) * src * fac + 0.5 * fac * fac);
+        src = clamp(tmp, 0.0, 1.0);
+    }
+    else
+    {
+        float tmp = 1.0 - src - (fac / SQRT2) - sqrt(1.0 - SQRT2 * fac + (2.0 * SQRT2) * src * fac + 0.5 * fac * fac);
+        src = clamp(tmp, 0.0, 1.0);
+    }
+    return src;
+}
+
+vec4 map_color_MC(vec3 src, float lum)
+{
+    float ft, fb;
+    lum *= 32767.0;
+    if(lum > 0.0)
+    {
+        float rlum = 38390.0 - lum;
+        if(rlum > 5623.0)
+        {
+            fb = lum * rlum * 0.00665 + 32691.48;
+        }
+        else
+        {
+            lum = 32767.0;
+            fb = (5879.0 - rlum) * 4915.89;
+        }
+    }
+    else
+    {
+        fb = (256.0 - lum) * 127.7;
+        lum = 0.0;
+    }
+    fb = 8192.25 / fb;
+
+    lum /= 32767.0;
+    lum = levelSP1(lum, dark1, light1);
+    lum = levelSP1(lum, dark2, light2);
+    lum = gammaSP1(lum, middle2);
+    lum = brightness1(lum, 22.0);
+
+    ft = lum * 1019.97 - lum * lum * 871.58 + 3.99;
+
+    fb = ft * fb;
+    src = src * fb;
+    return vec4(src, lum);
+}
+
+vec3 map_color(vec3 src, float lum)
+{
+    vec3 h = src - lum;
+    vec4 tmp = map_color_MC(src, lum);
+    h = tmp.rgb;
+    lum = tmp.a;
+    if(h.r + lum > 1.0)
+    {
+        float tmp = 1.0 - lum;
+        h.g = h.g * tmp / h.r;
+        h.b = h.b * tmp / h.r;
+        h.r = tmp;
+    }
+    float t3r = h.b + lum;
+    if(t3r < -0.00003)
+    {
+        src.rg = lum - h.rg * lum / h.b;
+        src.b = 0.0;
+    }
+    else
+    {
+        src.rg = lum + h.rg;
+        src.b = t3r;
+    }
+    return src;
+}
+
+vec3 dispatch(vec3 src)
+{
+    float lum = dot(src, vec3(0.299, 0.587, 0.114));
+    if(src.g > src.b)
+    {
+        if(src.r > src.g)
+        {
+            src = map_color(src, lum);
+        }
+        else if(src.r > src.b)
+        {
+            src.grb = map_color(src.grb, lum);
+        }
+        else
+        {
+            src.gbr = map_color(src.gbr, lum);
+        }
+    }
+    else
+    {
+        if(src.g > src.r)
+        {
+            src.bgr = map_color(src.bgr, lum);
+        }
+        else if(src.b > src.r)
+        {
+            src.brg = map_color(src.brg, lum);
+        }
+        else
+        {
+            src.rbg = map_color(src.rbg, lum);
+        }
+    }
+    return src;
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+
+    src = levelSP(src, dark1, light1);
+    src = levelSP(src, dark2, light2);
+    src = gammaSP(src, middle2);
+    
+    src = blackWhite(src);
+    src = brightness(src, 22.0);
+    //src = dispatch(src);
+    gl_FragColor = vec4(src, 1.0);
+}

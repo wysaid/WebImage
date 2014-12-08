@@ -1,0 +1,165 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerTableTex1;
+uniform sampler2D SamplerBackTex1;
+
+vec3 tableLookUp(vec3 src, sampler2D table)
+{
+    src.r = texture2D(table, vec2(src.r, 0.0)).r;
+    src.g = texture2D(table, vec2(src.g, 0.0)).g;
+    src.b = texture2D(table, vec2(src.b, 0.0)).b;
+    return src;
+}
+
+vec3 brightness(vec3 src, float value)  //value should not be zero
+{
+ const float SQRT2 = 1.41421;
+ float fac = (SQRT2 * 100.0) / value;
+
+ if(value > 0.0)
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) + sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ else
+ {
+   float tmp = 1.0 - src.r - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.r * fac + 0.5 * fac * fac);
+   src.r = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.g - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.g * fac + 0.5 * fac * fac);
+   src.g = clamp(tmp, 0.0, 1.0);
+
+   tmp = 1.0 - src.b - (fac / SQRT2) - sqrt(1.0 - SQRT2*fac + (2.0*SQRT2) * src.b * fac + 0.5 * fac * fac);
+   src.b = clamp(tmp, 0.0, 1.0);
+ }
+ return src;
+}
+
+vec3 RGB2HSL(vec3 src)
+{
+   float maxc = max(max(src.r, src.g), src.b);
+   float minc = min(min(src.r, src.g), src.b);
+   float L = (maxc + minc) / 2.0;
+   if(maxc == minc)
+       return vec3(0.0, 0.0, L);
+   float H, S;
+
+   if(L < 0.5)
+       S = (maxc - minc) / (maxc + minc);
+   else
+       S = (maxc - minc) / (2.0 - maxc - minc);
+
+   if(maxc == src.r)
+       H = (src.g - src.b) / (maxc - minc);
+   else if(maxc == src.g)
+       H = 2.0 + (src.b - src.r) / (maxc - minc);
+   else
+       H = 4.0 + (src.r - src.g) / (maxc - minc);
+   H *= 60.0;
+   if(H < 0.0) H += 360.0;
+ return vec3(H / 360.0, S, L); // H(0~360), S(0~1), L(0~1)
+}
+
+vec3 HSL2RGB(vec3 src) // H, S, L
+{
+   if(src.y <= 0.0)
+       return vec3(src.z, src.z, src.z);
+   float q = (src.z < 0.5) ? src.z * (1.0 + src.y) : (src.z + src.y - (src.y * src.z));
+   float p = 2.0 * src.z - q;
+
+   vec3 dst = vec3(src.x + 0.333, src.x, src.x - 0.333);
+
+   if(dst.r < 0.0) dst.r += 1.0;
+   else if(dst.r > 1.0) dst.r -= 1.0;
+
+   if(dst.g < 0.0) dst.g += 1.0;
+   else if(dst.g > 1.0) dst.g -= 1.0;
+
+   if(dst.b < 0.0) dst.b += 1.0;
+   else if(dst.b > 1.0) dst.b -= 1.0;
+
+   if(dst.r < 1.0 / 6.0)
+       dst.r = p + (q - p) * 6.0 * dst.r;
+   else if(dst.r < 0.5)
+       dst.r = q;
+   else if(dst.r < 2.0 / 3.0)
+       dst.r = p + (q - p) * ((2.0 / 3.0) - dst.r) * 6.0;
+   else dst.r = p;
+
+   if(dst.g < 1.0 / 6.0)
+       dst.g = p + (q - p) * 6.0 * dst.g;
+   else if(dst.g < 0.5)
+       dst.g = q;
+   else if(dst.g < 2.0 / 3.0)
+       dst.g = p + (q - p) * ((2.0 / 3.0) - dst.g) * 6.0;
+   else dst.g = p;
+
+   if(dst.b < 1.0 / 6.0)
+       dst.b = p + (q - p) * 6.0 * dst.b;
+   else if(dst.b < 0.5)
+       dst.b = q;
+   else if(dst.b < 2.0 / 3.0)
+       dst.b = p + (q - p) * ((2.0 / 3.0) - dst.b) * 6.0;
+   else dst.b = p;
+
+   return dst;
+}
+
+vec3 adjustColor(vec3 src, float hue, float sat) //hue should be positive
+{
+   src = RGB2HSL(src);
+   src.x *= 1.0 + hue;
+   src.y *= 1.0 + sat;
+   return HSL2RGB(src);
+}
+
+vec3 levelSP(vec3 src, float dark, float light)  //dark,light: (0~1)
+{
+    float range  = light - dark;
+    
+    if(src.r < dark)
+        src.r = 0.0;
+    else if(src.r > light)
+        src.r = 1.0;
+    else
+    {
+        src.r = (src.r - dark) / range;
+    }
+    
+    if(src.g < dark)
+        src.g = 0.0;
+    else if(src.g > light)
+        src.g = 1.0;
+    else
+    {
+        src.g = (src.g - dark) / range;
+    }
+    if(src.b < dark)
+        src.b = 0.0;
+    else if(src.b > light)
+        src.b = 1.0;
+    else
+    {
+        src.b = (src.b - dark) / range;
+    }
+    return src;
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    src = mix(src, tex.rgb, tex.a * 0.05);
+    src = brightness(src, -17.0);
+    src = adjustColor(src, 0.0, -0.20); //-20
+    src = levelSP(src, 0.0588, 1.0);
+    src = tableLookUp(src, SamplerTableTex1);
+    gl_FragColor = vec4(src, 1.0);
+}

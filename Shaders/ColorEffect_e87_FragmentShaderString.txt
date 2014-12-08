@@ -1,0 +1,21 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+const float r0 = 1.0;
+const float r1 = 0.835;
+const float r2 = 0.835;
+const float g0 = 0.0;
+const float g1 = 0.588;
+const float g2 = 1.0;
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    
+    src.r = 1.0 - ((1.0 - r0 * src.r) * (1.0 - g0 * src.g));
+    src.g = 1.0 - ((1.0 - r1 * src.r) * (1.0 - g1 * src.g));
+    src.b = 1.0 - ((1.0 - r2 * src.r) * (1.0 - g2 * src.g));
+    
+    gl_FragColor = vec4(src, 1.0);
+}

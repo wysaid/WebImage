@@ -1,0 +1,46 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    mediump float lum;
+    mediump vec4 txt;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    highp vec2 smp_coord = textureCoordinate;
+    //    smp_coord.x = v_texCoord.x*rangeW+rangeX;
+    //    smp_coord.y = (v_texCoord.y*rangeH+rangeY) * kx/ky;
+    txt.rgba = texture2D(SamplerBackTex1, smp_coord).abgr;  //since this texture is 4 channel, and for some reason, must this way?
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    tmp_s = lum*(1.0-saturate) + saturate*dst;
+    tmp_s = (tmp_s - bound_l)/saturate;
+    dst = tmp_s;
+    
+    dst.r = min(1.0,dst.r+dst.r-dst.r*dst.r);
+    dst.g = min(1.0,dst.g+dst.g-dst.g*dst.g);
+    dst.b = min(1.0,dst.b+dst.b-dst.b*dst.b);
+    
+    dst = dst*(1.0-0.51*txt.a) + txt.rgb*0.51*txt.a;
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    vec3 tmp_txt;
+    tmp_txt.r = 14006.0/32768.0;
+    tmp_txt.g = 7710.0/32768.0;
+    tmp_txt.b = 2698.0/32768.0;
+    float lum_t = tmp_txt.r*0.299 + tmp_txt.g*0.587 + tmp_txt.b*0.114;
+    lum = lum-lum_t;
+    dst = dst*0.66 + (tmp_txt+lum)*0.34;
+    
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

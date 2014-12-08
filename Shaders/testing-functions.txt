@@ -1,0 +1,138 @@
+precision highp float;
+varying vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+const float dark = 50.0 / 255.0;
+const float light = 200.0 / 255.0;
+
+vec3 contrastSP(vec3 src, float value)
+{
+ if(value < 0.0)
+ {
+     value += 200.0;
+     value = (value - 34.0) * 34.0 / 200.0;
+ }
+ src *= 1024.0;
+ src.r = clamp(src.r + ((src.r * (1024.0 - src.r) * (src.r - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ src.g = clamp(src.g + ((src.g * (1024.0 - src.g) * (src.g - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ src.b = clamp(src.b + ((src.b * (1024.0 - src.b) * (src.b - 511.0) / 128.0 * value)), 0.0, 1024.0);
+ return src / 1024.0;
+}
+
+vec3 RGB2HSL(vec3 src)
+ {
+     float maxc = max(max(src.r, src.g), src.b);
+     float minc = min(min(src.r, src.g), src.b);
+     float L = (maxc + minc) / 2.0;
+     if(maxc == minc)
+         return vec3(0.0, 0.0, L);
+     float H, S;
+     
+     if(L < 0.5)
+         S = (maxc - minc) / (maxc + minc);
+     else
+         S = (maxc - minc) / (2.0 - maxc - minc);
+     
+     if(maxc == src.r)
+         H = (src.g - src.b) / (maxc - minc);
+     else if(maxc == src.g)
+         H = 2.0 + (src.b - src.r) / (maxc - minc);
+     else
+         H = 4.0 + (src.r - src.g) / (maxc - minc);
+     H *= 60.0;
+     if(H < 0.0) H += 360.0;
+     return vec3(H / 360.0, S, L); // H(0~360), S(0~1), L(0~1)
+ }
+ 
+ vec3 HSL2RGB(vec3 src) // H, S, L
+ {
+     if(src.y <= 0.0)
+         return vec3(src.z, src.z, src.z);
+     float q = (src.z < 0.5) ? src.z * (1.0 + src.y) : (src.z + src.y - (src.y * src.z));
+     float p = 2.0 * src.z - q;
+     
+     vec3 dst = vec3(src.x + 0.333, src.x, src.x - 0.333);
+     
+     if(dst.r < 0.0) dst.r += 1.0;
+     else if(dst.r > 1.0) dst.r -= 1.0;
+     
+     if(dst.g < 0.0) dst.g += 1.0;
+     else if(dst.g > 1.0) dst.g -= 1.0;
+     
+     if(dst.b < 0.0) dst.b += 1.0;
+     else if(dst.b > 1.0) dst.b -= 1.0;
+     
+     if(dst.r < 1.0 / 6.0)
+         dst.r = p + (q - p) * 6.0 * dst.r;
+     else if(dst.r < 0.5)
+         dst.r = q;
+     else if(dst.r < 2.0 / 3.0)
+         dst.r = p + (q - p) * ((2.0 / 3.0) - dst.r) * 6.0;
+     else dst.r = p;
+     
+     if(dst.g < 1.0 / 6.0)
+         dst.g = p + (q - p) * 6.0 * dst.g;
+     else if(dst.g < 0.5)
+         dst.g = q;
+     else if(dst.g < 2.0 / 3.0)
+         dst.g = p + (q - p) * ((2.0 / 3.0) - dst.g) * 6.0;
+     else dst.g = p;
+     
+     if(dst.b < 1.0 / 6.0)
+         dst.b = p + (q - p) * 6.0 * dst.b;
+     else if(dst.b < 0.5)
+         dst.b = q;
+     else if(dst.b < 2.0 / 3.0)
+         dst.b = p + (q - p) * ((2.0 / 3.0) - dst.b) * 6.0;
+     else dst.b = p;
+     
+     return dst;
+ }
+ 
+ vec3 adjustColor(vec3 src, float hue, float sat) //hue should be positive
+ {
+     src = RGB2HSL(src);
+     src.x += hue;
+     src.y *= 1.0 + sat;
+     return HSL2RGB(src);
+ }
+
+ vec3 whiteBalance(vec3 src, float temp, float tint)
+ {
+     temp = clamp(temp, 1200.0, 12000.0);
+     tint = clamp(tint, 0.02, 5.0);
+     float xD;
+     temp /= 1000.0;
+     
+     if(temp < 4.0)
+         xD = 0.27475 / (temp * temp * temp) - 0.98598 / (temp * temp) + 1.17444 / temp + 0.145986;
+     else if(temp < 7.0)
+         xD = -4.6070 / (temp * temp * temp) + 2.9678 / (temp * temp) + 0.09911 / temp + 0.244063;
+     else xD = -2.0064 / (temp * temp * temp) + 1.9018 / (temp * temp) + 0.24748 / temp + 0.237040;
+     
+     float yD = -3.0 * xD * xD + 2.87 * xD - 0.275;
+     
+     float X = xD / yD;
+     float Z = (1.0 - xD - yD) / yD;
+     
+     vec3 color;
+     
+     color.r = X * 3.24074 - 1.53726 - Z * 0.498571;
+     color.g = -X * 0.969258 + 1.87599 + Z * 0.0415557;
+     color.b = X * 0.0556352 - 0.203996 + Z * 1.05707;
+     
+     color.g /= tint;
+     
+     color /= max(max(color.r, color.g), color.b);
+     color = 1.0 / color;
+     color /= color.r * 0.299 + color.g * 0.587 + color.b * 0.114;
+     
+     return src * color;
+ }
+
+void main()
+{
+	vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+	src = whiteBalance(src, 3500.0, 1.0);
+    gl_FragColor = vec4(src, 1.0);
+}

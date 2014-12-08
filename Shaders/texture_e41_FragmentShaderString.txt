@@ -1,0 +1,60 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    mediump float lum;
+    mediump vec3 txt;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    txt = texture2D(SamplerBackTex1, textureCoordinate).rgb;
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    tmp_s = lum*(1.0-saturate) + saturate*dst;
+    tmp_s = (tmp_s - bound_l)/saturate;
+    dst = tmp_s;
+    
+    vec3 tmp_txt;
+    tmp_txt = abs(src - txt);
+    dst = dst * 0.2 + tmp_txt * 0.8;
+    
+    dst.r = min(1.0,dst.r);
+    dst.g = min(1.0,dst.g);
+    dst.b = min(1.0,dst.b);
+    
+    tmp_txt = vec3(0.47059, 0.49019, 0.12940);
+    tmp_txt *= 2.0;
+    
+    if(dst.r < tmp_txt.r)
+    {
+        tmp_txt.r -= 1.0;
+        if(dst.r > tmp_txt.r)
+            tmp_txt.r = dst.r;
+    }
+    
+    if(dst.g < tmp_txt.g)
+    {
+        tmp_txt.g -= 1.0;
+        if(dst.g > tmp_txt.g)
+            tmp_txt.g = dst.g;
+    }
+    
+    if(dst.b < tmp_txt.b)
+    {
+        tmp_txt.b -= 1.0;
+        if(dst.b > tmp_txt.b)
+            tmp_txt.b = dst.b;
+    }
+    
+    gl_FragColor = vec4(tmp_txt,1.0);
+}

@@ -1,0 +1,63 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    mediump float lum;
+    mediump vec3 txt;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    highp vec2 smp_coord = textureCoordinate;
+    //    smp_coord.x = v_texCoord.x*rangeW+rangeX;
+    //    smp_coord.y = (v_texCoord.y*rangeH+rangeY) * kx/ky;
+    txt = texture2D(SamplerBackTex1, smp_coord).rgb;
+    
+    lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    tmp_s = lum*(1.0-saturate) + saturate*dst;
+    tmp_s = (tmp_s - bound_l)/saturate;
+    dst = tmp_s;
+    
+    vec3 tmp_txt;
+	tmp_txt = dst + txt - dst * txt;
+	dst = dst*0.48 + tmp_txt*0.52;
+    
+    
+	float saturation = 0.5;
+    
+	float color_r = txt.r;
+    float color_g = txt.g;
+    float color_b = txt.b;
+    
+	float sat_adj_lum = color_r * 0.299 + color_g * 0.587 + color_b * 0.114;
+	sat_adj_lum = sat_adj_lum * (1.0 - saturation);
+	float sat_adj_tmp = color_r * saturation + sat_adj_lum;
+	if(0.0 > sat_adj_tmp)sat_adj_tmp = 0.0;
+	if(1.0 < sat_adj_tmp)sat_adj_tmp = 1.0;
+	txt.r = sat_adj_tmp;
+	sat_adj_tmp = color_g * saturation + sat_adj_lum;
+	if(0.0 > sat_adj_tmp)sat_adj_tmp = 0.0;
+	if(1.0 < sat_adj_tmp)sat_adj_tmp = 1.0;
+	txt.g = sat_adj_tmp;
+	sat_adj_tmp = color_b * saturation + sat_adj_lum;
+	if(0.0 > sat_adj_tmp)sat_adj_tmp = 0.0;
+	if(1.0 < sat_adj_tmp)sat_adj_tmp = 1.0;
+	txt.b = sat_adj_tmp;
+    
+    txt.r = max(1.0 - (1.0 - dst.r)/txt.r, 0.0);
+    txt.g = max(1.0 - (1.0 - dst.g)/txt.g, 0.0);
+    txt.b = max(1.0 - (1.0 - dst.b)/txt.b, 0.0);
+    
+    dst = dst*0.47 + txt*0.53;
+    
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

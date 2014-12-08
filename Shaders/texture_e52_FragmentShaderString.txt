@@ -1,0 +1,27 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 tex;
+    mediump vec3 dst;
+    
+    src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    tex = texture2D(SamplerBackTex1, textureCoordinate).rgb;
+    if(src.r < 0.5)
+        dst.r = src.r * tex.r * 2.0;
+    else dst.r = (src.r + tex.r) * 2.0 - (src.r * tex.r * 2.0) - 1.0;
+    
+    if(src.g < 0.5)
+        dst.g = src.g * tex.g * 2.0;
+    else dst.g = (src.g + tex.g) * 2.0 - (src.g * tex.g * 2.0) - 1.0;
+    
+    if(src.b < 0.5)
+        dst.b = src.b * tex.b * 2.0;
+    else dst.b = (src.b + tex.b) * 2.0 - (src.b * tex.b * 2.0) - 1.0;
+    
+    gl_FragColor = vec4(mix(src, dst, 0.8), 1.0);
+}

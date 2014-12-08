@@ -1,0 +1,56 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+
+vec3 blackWhite(vec3 src)
+{
+    float f = (max(max(src.r, src.g), src.b) + min(min(src.r, src.g), src.b)) / 2.0;
+    return vec3(f, f, f);
+}
+
+ vec3 levelSP(vec3 src, float dark, float light)  //dark,light: (0~1)
+ {
+     float range  = light - dark;
+     
+     if(src.r < dark)
+         src.r = 0.0;
+     else if(src.r > light)
+         src.r = 1.0;
+     else
+     {
+         src.r = (src.r - dark) / range;
+     }
+     
+     if(src.g < dark)
+         src.g = 0.0;
+     else if(src.g > light)
+         src.g = 1.0;
+     else
+     {
+         src.g = (src.g - dark) / range;
+     }
+     if(src.b < dark)
+         src.b = 0.0;
+     else if(src.b > light)
+         src.b = 1.0;
+     else
+     {
+         src.b = (src.b - dark) / range;
+     }
+     return src;
+ }
+ 
+ vec3 gammaSP(vec3 src, float value) //value: 0~1
+ {
+     return clamp(pow(src, vec3(value, value, value)), 0.0, 1.0);
+ }
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    
+    src = blackWhite(src);
+    src = levelSP(src, 0.0, 0.839);
+    src = gammaSP(src, 1.0 / 1.14);
+    gl_FragColor = vec4(src, 1.0);
+}

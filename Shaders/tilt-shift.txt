@@ -1,0 +1,38 @@
+/*
+@ author: wysaid
+@ blog: blog.wysaid.org
+@ mail: admin@wysaid.org
+@ date: 2013-9-10
+*/
+
+precision mediump float;
+varying vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform float widthStep;
+uniform float heightStep;
+const float blurRadius = 3.5;
+//const float blurPixels = (blurRadius * 2.0 + 1.0) * (blurRadius * 2.0 + 1.0);
+
+const float blurRadiusScale = 2.5;
+
+float random(vec3 scale, float seed) {
+    return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 43758.5453 + seed);
+}
+
+void main()
+{
+    vec3 sumColor = vec3(0.0, 0.0, 0.0);
+    float weight = 0.0;
+    float blurPixels = 0.0;
+    for(float fy = -blurRadius; fy <= blurRadius; ++fy)
+    {
+        for(float fx = -blurRadius; fx <= blurRadius; ++fx)
+        {
+            float percent = 1.0 - abs(blurRadius / fx * blurRadius / fy);
+            vec2 coord = vec2(fx * widthStep, fy * heightStep) * blurRadiusScale;
+            sumColor += texture2D(inputImageTexture, textureCoordinate + coord).rgb * percent;
+            blurPixels += percent;
+        }
+    }
+    gl_FragColor = vec4(sumColor / blurPixels, 1.0);
+}

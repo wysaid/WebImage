@@ -1,0 +1,26 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform  float saturate;
+uniform  float bound_l;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+void main(void)
+{
+    mediump vec3 src; mediump vec3 dst;
+    mediump vec3 tmp_s;
+    mediump float alpha;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    float lum = dst.r*0.299 + dst.g*0.587 + dst.b*0.114;
+    
+    lum = (lum - bound_l)/saturate;
+    //set low bound to 0;
+    lum = max(0.0,lum);
+    lum = min(1.0,lum);
+    
+    dst = vec3(lum,lum,lum);
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

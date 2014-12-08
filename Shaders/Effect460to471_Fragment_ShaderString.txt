@@ -1,0 +1,48 @@
+
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerTableTex1;
+uniform float strength;
+
+ vec3 overLay(vec3 src1, vec3 src2, float alpha)
+ {
+     if(src1.r < 0.5)
+         src2.r = (src1.r * src2.r) * 2.0;
+     else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+     
+     if(src1.g < 0.5)
+         src2.g = (src1.g * src2.g) * 2.0;
+     else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+     
+     if(src1.b < 0.5)
+         src2.b = (src1.b * src2.b) * 2.0;
+     else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+     
+     return mix(src1, src2, alpha);
+ }
+
+  vec3 tableLookUp(vec3 src, sampler2D table)
+ {
+     src.r = texture2D(table, vec2(src.r, 0.0)).r;
+     src.g = texture2D(table, vec2(src.g, 0.0)).g;
+     src.b = texture2D(table, vec2(src.b, 0.0)).b;
+     return src;
+ }
+
+ vec3 blackWhite(vec3 src)
+ {
+     float f = (max(max(src.r, src.g), src.b) + min(min(src.r, src.g), src.b)) / 2.0;
+     return vec3(f, f, f);
+ }
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    src = blackWhite(src);
+    src = tableLookUp(src, SamplerTableTex1);
+    src = overLay(src, tex.rgb, strength * tex.a);
+    gl_FragColor = vec4(src, 1.0);
+}

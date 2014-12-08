@@ -1,0 +1,31 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform float strength;
+
+vec3 hardLight(vec3 src1, vec3 src2, float alpha)
+{
+    if(src2.r < 0.5)
+        src2.r = (src1.r * src2.r) * 2.0;
+    else src2.r = (src1.r + src2.r) * 2.0 - (src1.r * src2.r) * 2.0 - 1.0;
+    
+    if(src2.g < 0.5)
+        src2.g = (src1.g * src2.g) * 2.0;
+    else src2.g = (src1.g + src2.g) * 2.0 - (src1.g * src2.g) * 2.0 - 1.0;
+    
+    if(src2.b < 0.5)
+        src2.b = (src1.b * src2.b) * 2.0;
+    else src2.b = (src1.b + src2.b) * 2.0 - (src1.b * src2.b) * 2.0 - 1.0;
+    
+    return mix(src1, src2, alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec4 tex = texture2D(SamplerBackTex1, textureCoordinate);
+    
+    src = hardLight(src, tex.rgb, strength * tex.a);
+    gl_FragColor = vec4(src, 1.0);
+}

@@ -1,0 +1,154 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerTableTex1;
+uniform mediump float strength; // effect strength, blend with source, 0 -- 1, default is 1
+
+void main(void)
+{
+    mediump vec3 src;
+    mediump vec3 dst;
+    mediump vec3 tmp_s;
+    
+    mediump float fmax;
+    mediump float fmin;
+    mediump float fdelta;
+    vec3 hsv;
+    float fh_red = -0.5;
+    float fh_yellow = -0.5;
+    float fh_green = -0.5;
+    float fh_cyan = -0.5;
+    float fh_blue = -0.5;
+    float fh_magenta = -0.5;
+    float fs_off;
+    
+    src.rgb = texture2D(inputImageTexture, textureCoordinate).rgb;
+    dst = src;
+    
+    //rgb2hsv
+    fmax = max(dst.r,max(dst.g,dst.b));
+    fmin = min(dst.r,min(dst.g,dst.b));
+    fdelta = fmax - fmin;
+    
+    hsv.z = fmax;
+    if(0.0 == fdelta)
+    {
+        hsv.x = 0.0;
+        hsv.y = 0.0;
+    }
+    //hue calculate
+    else
+    {
+        hsv.y = fdelta/fmax;
+        if(fmax == dst.r)
+        {
+            if(dst.g >= dst.b)
+            {
+                //0
+                hsv.x = (dst.g - dst.b)/fdelta;
+                fs_off = (fh_yellow - fh_red)*hsv.x + fh_red;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                
+                //hsv2rgb
+                dst.r = hsv.z;
+                dst.b = hsv.z*(1.0 - hsv.y);
+                dst.g = hsv.z*(1.0 - hsv.y + hsv.y*hsv.x);
+            }
+            else
+            {
+                //5
+                //hsv.x = (dst.b - dst.g)/fdelta;
+                hsv.x = (dst.r - dst.b)/fdelta;
+                fs_off = (fh_red - fh_magenta)*hsv.x + fh_magenta;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                //hsv2rgb
+                dst.r = hsv.z;
+                dst.g = hsv.z*(1.0 - hsv.y);
+                dst.b = hsv.z*(1.0 - hsv.y*hsv.x);
+            }
+        }
+        else if(fmax == dst.g)
+        {
+            
+            if(dst.r > dst.b)
+            {
+                //1
+                //hsv.x = (dst.r - dst.b)/fdelta;
+                hsv.x = (dst.g - dst.r)/fdelta;
+                fs_off = (fh_green - fh_yellow)*hsv.x + fh_yellow;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                //hsv2rgb
+                dst.g = hsv.z;
+                dst.r = hsv.z*(1.0 - hsv.y*hsv.x);
+                dst.b = hsv.z*(1.0 - hsv.y);
+            }
+            else
+            {
+                //2
+                hsv.x = (dst.b - dst.r)/fdelta;
+                fs_off = (fh_cyan - fh_green)*hsv.x + fh_green;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                //hsv2rgb
+                dst.g = hsv.z;
+                dst.r = hsv.z*(1.0 - hsv.y);
+                dst.b = hsv.z*(1.0 - hsv.y + hsv.y*hsv.x);
+            }
+        }
+        else
+        {
+            if(dst.g > dst.r)
+            {
+                //3
+                //hsv.x = (dst.g - dst.r)/fdelta;
+                hsv.x = (dst.b - dst.g)/fdelta;
+                fs_off = (fh_blue - fh_cyan)*hsv.x + fh_cyan;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                //hsv2rgb
+                dst.b = hsv.z;
+                dst.r = hsv.z*(1.0 - hsv.y);
+                dst.g = hsv.z*(1.0 - hsv.y*hsv.x);
+            }
+            else
+            {
+                //4
+                hsv.x = (dst.r - dst.g)/fdelta;
+                fs_off = (fh_magenta - fh_blue)*hsv.x + fh_blue;
+                //saturation adjust
+                hsv.y = hsv.y*(1.0 + fs_off);
+                hsv.y = min(1.0 , hsv.y);
+                hsv.y = max(0.0 , hsv.y);
+                //rgb2hsv end
+                //hsv2rgb
+                dst.b = hsv.z;
+                dst.r = hsv.z*(1.0 - hsv.y + hsv.y*hsv.x);
+                dst.g = hsv.z*(1.0 - hsv.y);
+            }
+        }
+    }
+    //color mapping
+    dst.r = texture2D(SamplerTableTex1,vec2(dst.r,0.0)).r;  // note rgb -> bgr?
+    dst.g = texture2D(SamplerTableTex1,vec2(dst.g,0.0)).g;
+    dst.b = texture2D(SamplerTableTex1,vec2(dst.b,0.0)).b;
+    
+    gl_FragColor = vec4(mix(src, dst, strength),1.0);
+}

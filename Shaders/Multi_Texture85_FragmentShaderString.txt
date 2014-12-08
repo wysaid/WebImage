@@ -1,0 +1,37 @@
+precision mediump float;
+varying highp vec2 textureCoordinate;
+uniform sampler2D inputImageTexture;
+uniform sampler2D SamplerBackTex1;
+uniform sampler2D SamplerBackTex2;
+uniform sampler2D SamplerBackTex3;
+
+vec3 screen(vec3 src1, vec3 src2, float alpha)
+{
+    return mix(src1, src1 + src2 - src1 * src2, alpha);
+}
+
+vec3 vividLight(vec3 src1, vec3 src2, float alpha)
+{
+    src2.r = src2.r < 0.5 ? 1.0 - ((1.0 - src1.r) * src2.r) * 2.0 : src1.r / (1.0 - src2.r) * 0.5;
+    src2.g = src2.g < 0.5 ? 1.0 - ((1.0 - src1.g) * src2.g) * 2.0 : src1.g / (1.0 - src2.g) * 0.5;
+    src2.b = src2.b < 0.5 ? 1.0 - ((1.0 - src1.b) * src2.b) * 2.0 : src1.b / (1.0 - src2.b) * 0.5;
+    return mix(src1, clamp(src2, 0.0, 1.0) , alpha);
+}
+
+vec3 multiply(vec3 src1, vec3 src2, float alpha)
+{
+    return mix(src1, src1 * src2, alpha);
+}
+
+void main()
+{
+    vec3 src = texture2D(inputImageTexture, textureCoordinate).rgb;
+    vec3 tex1 = texture2D(SamplerBackTex1, textureCoordinate).rgb;
+    vec3 tex2 = texture2D(SamplerBackTex2, textureCoordinate).rgb;
+    vec3 tex3 = texture2D(SamplerBackTex3, textureCoordinate).rgb;
+    
+    src = screen(src, tex2, 1.0);
+    src = vividLight(src, tex3, 0.69);
+    src = multiply(src, tex1, 0.86);
+    gl_FragColor = vec4(src, 1.0);
+}
