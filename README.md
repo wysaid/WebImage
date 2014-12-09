@@ -6,4 +6,4 @@
 
 # 好哒， 就一本正经地说这么多吧 #
 
-直接访问主页： <a href="http://image.wysaid.org/" target="_blank">http://image.wysaid.org/</a>
+直接访问主页： <a href="http://image.wysaid.org/" target="_blank">image.wysaid.org</a>
