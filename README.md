@@ -5,3 +5,5 @@
 图片资源来自 fotor.com 的应用程序资源包， 版权归其所有， 未经允许， 不得擅自用于商业用途。 请尊重版权！
 
 # 好哒， 就一本正经地说这么多吧 #
+
+直接访问主页： <a href="http://image.wysaid.org/">http://image.wysaid.org/</a>
