@@ -9,4 +9,4 @@
 
 直接访问主页： <a href="http://image.wysaid.org/" target="_blank">image.wysaid.org</a>
 
-<img src="https://github.com/wysaid/WebImage/raw/gh-pages/screenshot.jpg"
+<img src="https://github.com/wysaid/WebImage/raw/gh-pages/screenshot.jpg">
