@@ -416,13 +416,13 @@ var frameNum = frameDefEnum.length;
 
 var sourcePicEnum = 
 [
+"Resource/woman.jpg",
 "Resource/girl.jpg",
 "Resource/kanade.jpg",
 "Resource/AngelBeats.jpg",
 "Resource/house.jpg",
 "Resource/dish.jpg",
 "Resource/godness.jpg",
-"Resource/woman.jpg",
 "Resource/woman2.jpg",
 "Resource/xiada.jpg",
 "Resource/boy.jpg",
